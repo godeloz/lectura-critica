@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diagnóstico de lectura crítica con IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fondo:#F2F2F5; --superficie:#FFFFFF; --superficie-2:#FAFAFC;
+  --tinta:#1A1A1E; --tinta-media:#55555C; --tinta-suave:#8A8A93;
+  --linea:#E3E3E9; --linea-fuerte:#CFCFD8;
+  --sensibilidad:#E0326B; --actitud:#5A55E0; --lectora:#00937B;
+  --proceso:#E08600; --patrones:#9A4BD6; --rojo:#D6303B;
+  --ok:#00875A; --alerta:#C9482B;
+  --sombra-s:0 1px 2px rgba(20,20,30,.06),0 1px 1px rgba(20,20,30,.04);
+  --sombra-m:0 4px 16px rgba(20,20,30,.07),0 1px 3px rgba(20,20,30,.05);
+  --sombra-l:0 12px 40px rgba(20,20,30,.12);
+  --ui:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+  --ancho:920px; --medida:660px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:var(--fondo);color:var(--tinta);font-family:var(--ui);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--actitud);outline-offset:2px;border-radius:6px}
+
+/* ---------- Encabezado compacto ---------- */
+.barra{position:sticky;top:0;z-index:80;background:rgba(242,242,245,.86);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--linea);padding-top:env(safe-area-inset-top)}
+.barra-in{max-width:var(--ancho);margin:0 auto;display:flex;align-items:center;gap:8px;padding:0 14px;height:46px}
+.nav-ic{width:32px;height:32px;flex:0 0 32px;border:0;background:transparent;border-radius:9px;
+  display:grid;place-items:center;padding:0;color:var(--actitud)}
+.nav-ic:hover{background:rgba(90,85,224,.10)}
+.nav-ic svg{width:19px;height:19px;display:block}
+.barra-titulo{flex:1;min-width:0;font-size:14.5px;font-weight:660;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.barra-in.inicio .barra-titulo{text-align:left;padding-left:4px}
+.nav-diag{border:0;background:transparent;border-radius:9px;padding:6px 10px;
+  font-size:14px;font-weight:600;color:var(--actitud);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.nav-diag:hover{background:rgba(90,85,224,.10)}
+.nav-diag .cnt{font-size:11.5px;font-weight:700;background:var(--actitud);color:#fff;
+  border-radius:99px;padding:1px 6px;min-width:18px;text-align:center}
+.progreso{height:2px;background:var(--linea);position:relative;overflow:hidden}
+.progreso i{position:absolute;inset:0 auto 0 0;background:var(--actitud);transition:width .5s cubic-bezier(.32,.72,0,1)}
+
+.envoltura{max-width:var(--ancho);margin:0 auto;padding:0 18px 100px}
+.vista{animation:entra .3s cubic-bezier(.32,.72,0,1) both}
+@keyframes entra{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+h1{font-size:31px;line-height:1.15;letter-spacing:-.028em;font-weight:750;margin:22px 0 10px;max-width:var(--medida)}
+h2{font-size:21px;line-height:1.25;letter-spacing:-.02em;font-weight:700;margin:30px 0 10px;max-width:var(--medida)}
+h3{font-size:16.5px;line-height:1.32;letter-spacing:-.01em;font-weight:680;margin:20px 0 8px}
+p{margin:0 0 13px;max-width:var(--medida)}
+.entrada{font-size:17.5px;line-height:1.5;color:var(--tinta-media);margin:0 0 20px;max-width:var(--medida)}
+.nota{font-size:14.5px;line-height:1.55;color:var(--tinta-suave);max-width:var(--medida)}
+
+/* ---------- Portada ---------- */
+.portada{padding:26px 0 4px}
+.portada h1{font-size:36px;margin-top:6px}
+.marca{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:640;color:var(--tinta-media)}
+.marca .punto{width:9px;height:9px;border-radius:50%;background:var(--actitud)}
+
+.lista-modulos{display:grid;gap:10px;margin-top:8px}
+@media(min-width:700px){.lista-modulos{grid-template-columns:1fr 1fr}}
+.mod{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:var(--superficie);
+  border:1px solid var(--linea);border-radius:20px;padding:14px 15px;box-shadow:var(--sombra-s);
+  transition:transform .18s cubic-bezier(.32,.72,0,1),box-shadow .18s,border-color .18s}
+.mod:hover{box-shadow:var(--sombra-m);border-color:var(--linea-fuerte)}
+.mod:active{transform:scale(.985)}
+.mod-ic{width:40px;height:40px;flex:0 0 40px;border-radius:12px;display:grid;place-items:center;
+  font-size:17px;font-weight:750;color:#fff;letter-spacing:-.02em}
+.mod-txt{flex:1;min-width:0}
+.mod-nom{font-size:16px;font-weight:660;letter-spacing:-.012em;line-height:1.25;display:block}
+.mod-sub{font-size:13px;color:var(--tinta-suave);margin-top:2px;line-height:1.35;display:block}
+.mod-est{flex:0 0 auto;font-size:11.5px;font-weight:640;padding:3px 8px;border-radius:99px;background:var(--fondo);color:var(--tinta-suave)}
+.mod-est.curso{background:rgba(224,134,0,.14);color:#9C5D00}
+.mod-est.hecho{background:rgba(0,135,90,.13);color:var(--ok)}
+
+.tarjeta{background:var(--superficie);border:1px solid var(--linea);border-radius:20px;padding:19px;margin:15px 0;box-shadow:var(--sombra-s);max-width:var(--medida)}
+.tarjeta.ancha{max-width:none}
+.tarjeta.plana{box-shadow:none;background:var(--superficie-2)}
+.aviso{border-left:3px solid var(--actitud);background:var(--superficie-2);border-radius:9px;
+  padding:13px 15px;margin:15px 0;font-size:15px;line-height:1.55;color:var(--tinta-media);max-width:var(--medida)}
+.aviso .t{display:block;font-weight:680;color:var(--tinta);margin-bottom:3px;font-size:14.5px}
+.aviso.enseña{border-left-color:var(--lectora)}
+.aviso.ojo{border-left-color:var(--proceso)}
+.aviso.hecho{border-left-color:var(--ok);background:rgba(0,135,90,.05)}
+
+.lectura{font-family:var(--serif);font-size:18.5px;line-height:1.68;color:#232329;max-width:var(--medida)}
+.lectura h4{font-family:var(--ui);font-size:12.5px;font-weight:700;color:var(--tinta-suave);margin:0 0 12px}
+.lectura .tit{font-family:var(--serif);font-size:22px;font-weight:600;margin:0 0 12px;line-height:1.25}
+.lectura p{margin:0 0 15px;max-width:none}
+.lectura p:last-child{margin-bottom:0}
+.credito{font-family:var(--ui);font-size:12.5px;color:var(--tinta-suave);margin-top:14px;font-style:normal}
+.frase{cursor:pointer;border-radius:4px;padding:1px 2px;margin:0 -2px;transition:background .15s}
+.frase:hover{background:rgba(224,50,107,.10)}
+.frase.sel{background:rgba(224,50,107,.20);box-shadow:inset 0 -2px 0 var(--sensibilidad)}
+.parr-sel{cursor:pointer;border-radius:8px;padding:6px 8px;margin:0 -8px 9px;transition:background .15s;display:block}
+.parr-sel:hover{background:rgba(224,50,107,.08)}
+.parr-sel.sel{background:rgba(224,50,107,.14);box-shadow:inset 0 0 0 1.5px var(--sensibilidad)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--tinta);color:#fff;
+  border:0;border-radius:13px;padding:13px 20px;font-size:16px;font-weight:640;letter-spacing:-.01em;
+  transition:transform .16s cubic-bezier(.32,.72,0,1),opacity .16s}
+.btn:hover{opacity:.88}
+.btn:active{transform:scale(.97)}
+.btn[disabled]{opacity:.3;pointer-events:none}
+.btn.ancho{width:100%;max-width:var(--medida)}
+.btn.sec{background:var(--superficie);color:var(--tinta);border:1px solid var(--linea-fuerte)}
+.btn.sec:hover{background:var(--superficie-2);opacity:1}
+.btn.chico{padding:9px 14px;font-size:14px;border-radius:10px}
+.btn.peligro{background:transparent;color:var(--alerta);border:1px solid rgba(201,72,43,.3)}
+.btn.peligro:hover{background:rgba(201,72,43,.06);opacity:1}
+.acciones{display:flex;gap:10px;margin:20px 0 8px;max-width:var(--medida);flex-wrap:wrap}
+.acciones .btn{flex:1;min-width:150px}
+
+.ops{display:flex;flex-direction:column;gap:9px;margin:13px 0;max-width:var(--medida)}
+.ops.ancha{max-width:none}
+.op{display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;background:var(--superficie);
+  border:1.5px solid var(--linea);border-radius:15px;padding:13px 14px;font-size:15.5px;line-height:1.45;
+  transition:border-color .16s,background .16s,transform .14s}
+.op:hover{border-color:var(--linea-fuerte);background:var(--superficie-2)}
+.op:active{transform:scale(.99)}
+.op .letra{flex:0 0 24px;height:24px;border-radius:8px;background:var(--fondo);color:var(--tinta-media);
+  display:grid;place-items:center;font-size:12.5px;font-weight:700;margin-top:1px}
+.op.sel{border-color:var(--tinta)}
+.op.sel .letra{background:var(--tinta);color:#fff}
+.op.bien{border-color:var(--ok);background:rgba(0,135,90,.05)}
+.op.bien .letra{background:var(--ok);color:#fff}
+.op.mal{border-color:var(--alerta);background:rgba(201,72,43,.05)}
+.op.mal .letra{background:var(--alerta);color:#fff}
+.op[disabled]{pointer-events:none}
+.op.apagada{opacity:.45}
+
+.retro{border-radius:15px;padding:14px 15px;margin:13px 0 4px;font-size:15px;line-height:1.55;
+  background:var(--superficie-2);border:1px solid var(--linea);max-width:var(--medida);
+  animation:entra .3s cubic-bezier(.32,.72,0,1) both}
+.retro .cab{font-weight:700;margin-bottom:5px;font-size:14.5px}
+.retro.bien .cab{color:var(--ok)}
+.retro.mal .cab{color:var(--alerta)}
+.retro.neutro .cab{color:var(--tinta)}
+.retro p{margin:0 0 8px;max-width:none}
+.retro p:last-child{margin:0}
+.retro .costo{margin-top:10px;padding-top:10px;border-top:1px solid var(--linea);font-size:14px;color:var(--tinta-media)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0;max-width:var(--medida)}
+.chip{background:var(--superficie);border:1.5px solid var(--linea);border-radius:99px;padding:9px 15px;
+  font-family:var(--serif);font-size:16.5px;transition:all .16s cubic-bezier(.32,.72,0,1)}
+.chip:hover{border-color:var(--linea-fuerte)}
+.chip.sel{background:var(--sensibilidad);border-color:var(--sensibilidad);color:#fff}
+.chip.rev-si{border-color:var(--ok);color:var(--ok)}
+.chip.rev-no{border-color:var(--alerta);color:var(--alerta);text-decoration:line-through}
+.contador{font-size:14px;color:var(--tinta-suave);font-weight:600}
+
+.escala{margin:20px 0;max-width:var(--medida)}
+.escala .enun{font-size:16px;line-height:1.42;margin-bottom:12px;font-weight:560}
+.escala .polos{display:flex;justify-content:space-between;font-size:12.5px;color:var(--tinta-suave);margin-top:6px;gap:14px}
+.escala .polos span{max-width:46%}
+.escala .polos span:last-child{text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:99px;background:var(--linea-fuerte)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:27px;height:27px;border-radius:50%;
+  background:#fff;box-shadow:var(--sombra-m),0 0 0 .5px rgba(0,0,0,.08);margin-top:-11px}
+input[type=range]::-moz-range-track{height:5px;border-radius:99px;background:var(--linea-fuerte)}
+input[type=range]::-moz-range-thumb{width:27px;height:27px;border-radius:50%;border:0;background:#fff;box-shadow:var(--sombra-m)}
+.marcas-slider{display:flex;justify-content:space-between;padding:0 12px;margin-top:-6px}
+.marcas-slider i{width:2px;height:8px;background:var(--linea-fuerte);border-radius:2px}
+
+.plano-cont{margin:18px 0}
+.plano{position:relative;width:100%;aspect-ratio:1;max-width:360px;background:var(--superficie);
+  border:1px solid var(--linea);border-radius:16px;cursor:crosshair;touch-action:none;
+  box-shadow:var(--sombra-s);overflow:hidden}
+.plano .eje{position:absolute;background:var(--linea)}
+.plano .eje.h{left:0;right:0;top:50%;height:1px}
+.plano .eje.v{top:0;bottom:0;left:50%;width:1px}
+.plano .pt{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--sensibilidad);
+  border:3px solid #fff;box-shadow:var(--sombra-m);transform:translate(-50%,-50%);
+  display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.plano-lbl{font-size:12px;color:var(--tinta-suave);position:absolute;font-weight:600}
+.plano-lbl.arr{top:7px;left:50%;transform:translateX(-50%)}
+.plano-lbl.aba{bottom:7px;left:50%;transform:translateX(-50%)}
+.plano-lbl.izq{left:7px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left center}
+.plano-lbl.der{right:7px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:right center}
+.plano-guia{display:flex;flex-direction:column;gap:7px;margin:14px 0;max-width:var(--medida)}
+.guia-it{display:flex;align-items:center;gap:10px;font-size:14.5px;padding:8px 11px;border-radius:11px;
+  background:var(--superficie-2);border:1.5px solid var(--linea)}
+.guia-it.act{border-color:var(--sensibilidad);background:rgba(224,50,107,.05)}
+.guia-it.ok{border-color:var(--ok)}
+.guia-it .n{width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:var(--linea);color:var(--tinta-media);
+  display:grid;place-items:center;font-size:11.5px;font-weight:700}
+.guia-it.act .n{background:var(--sensibilidad);color:#fff}
+.guia-it.ok .n{background:var(--ok);color:#fff}
+
+textarea,input[type=text]{width:100%;font-family:var(--ui);font-size:16px;line-height:1.5;padding:12px 13px;
+  border-radius:13px;border:1.5px solid var(--linea);background:var(--superficie);color:var(--tinta);max-width:var(--medida)}
+textarea{resize:vertical;min-height:80px}
+textarea:focus,input[type=text]:focus{border-color:var(--actitud);outline:none}
+select{font-family:var(--ui);font-size:15px;font-weight:600;padding:8px 30px 8px 12px;border-radius:10px;
+  border:1.5px solid var(--linea-fuerte);background:var(--superficie);color:var(--tinta);appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1.5L6 6.5L11 1.5' stroke='%2355555C' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 11px center;max-width:100%}
+
+.pasos{display:flex;gap:4px;margin:2px 0 18px;max-width:var(--medida)}
+.pasos i{flex:1;height:3px;border-radius:99px;background:var(--linea)}
+.pasos i.on{background:var(--actitud)}
+.etiqueta-paso{font-size:12.5px;font-weight:680;color:var(--tinta-suave);margin-bottom:5px}
+
+.grafico{display:block;width:100%;height:auto;max-width:420px;margin:6px 0}
+.medidor{height:7px;border-radius:99px;background:var(--linea);overflow:hidden;margin:6px 0}
+.medidor i{display:block;height:100%;border-radius:99px}
+.vacio{border:1.5px dashed var(--linea-fuerte);border-radius:18px;padding:20px;text-align:center;
+  color:var(--tinta-suave);font-size:15px;background:var(--superficie-2);max-width:var(--medida)}
+.diag-sec{margin:24px 0}
+.diag-cab{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.diag-cab .pt{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.diag-cab h3{margin:0}
+.trayecto{font-size:14.5px;line-height:1.5;color:var(--tinta-media);padding:9px 0;border-bottom:1px solid var(--linea)}
+.trayecto:last-child{border-bottom:0}
+.trayecto b{color:var(--tinta);font-weight:660}
+.barras{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.barra-fila .lab{display:flex;justify-content:space-between;font-size:13px;color:var(--tinta-media);margin-bottom:3px}
+.barra-pista{height:9px;background:var(--linea);border-radius:99px;position:relative;overflow:hidden}
+.barra-pista i{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.barra-pista .ideal{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--tinta);border-radius:99px}
+
+details{margin:13px 0;max-width:var(--medida)}
+summary{cursor:pointer;color:var(--actitud);font-weight:620;font-size:15px;padding:6px 0;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'›';display:inline-block;margin-right:7px;transition:transform .2s;font-weight:700}
+details[open] summary::before{transform:rotate(90deg)}
+
+.fila{display:flex;gap:9px;flex-wrap:wrap}
+.mt0{margin-top:0}
+.oculto{display:none!important}
+@media(min-width:768px){body{font-size:17.5px}.envoltura{padding:0 24px 120px}h1{font-size:38px}.portada h1{font-size:44px}}
+
+.texto-marcable{font-family:var(--serif);font-size:17.5px;line-height:2.05}
+.pal{cursor:pointer;border-radius:3px;padding:1px 1px;transition:background .12s}
+.pal:hover{background:rgba(0,0,0,.07)}
+.pend{background:rgba(90,85,224,.18);box-shadow:0 0 0 2px rgba(90,85,224,.35);border-radius:4px;padding:1px 2px}
+.marca{background:rgba(214,48,59,.14);box-shadow:inset 0 -2px 0 var(--rojo);border-radius:4px;padding:1px 2px;cursor:pointer}
+.marca:hover{background:rgba(214,48,59,.24)}
+.etq{font-family:var(--ui);font-size:9.5px;font-weight:700;color:#fff;background:var(--rojo);
+  border-radius:5px;padding:2px 5px;margin-left:4px;vertical-align:middle;top:0;white-space:nowrap}
+.menu-etq{background:var(--superficie-2);border:1px solid var(--linea);border-radius:14px;padding:13px;margin:13px 0}
+</style>
+</head>
+<body>
+<header class="barra">
+  <div class="barra-in inicio" id="barra-in">
+    <button class="nav-ic oculto" id="atras" aria-label="Volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <span class="barra-titulo" id="titulo-barra">Lectura crítica con IA</span>
+    <button class="nav-diag" id="ir-diag">Diagnóstico <span class="cnt" id="cnt-diag">0</span></button>
+  </div>
+  <div class="progreso"><i id="prog" style="width:0%"></i></div>
+</header>
+<main class="envoltura"><div id="vista" class="vista"></div></main>
+<script>
+const S={sensibilidad:null,actitud:{},socratico:null,ciclo:null,habitos:{},autoria:null,patrones:null,
+  lectora:{literal:[],inferencial:[],critica:[],contra:[]}};
+const EST={};
+function anotaEje(e,p,f){(S.actitud[e]=S.actitud[e]||[]).push({polo:p,fuente:f})}
+function ejeVal(e){const a=S.actitud[e];return a&&a.length?Math.round(a.reduce((s,x)=>s+x.polo,0)/a.length*100):null}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+/* ===================================================================
+   TEXTOS
+   =================================================================== */
+const T1={ titulo:'Pasar página', credito:'Wisława Szymborska, sobre un calendario de pared. Varsovia, 1973.',
+ parrafos:[
+  ['¿Y por qué no dedicarle algunas palabras a ese calendario de pared al que le vamos arrancando las hojas?','No deja de ser un libro, después de todo, y bastante gordo, ya que no puede tener menos de trescientas sesenta y cinco páginas.','Llega a los quioscos en una edición que alcanza los tres millones trescientos mil ejemplares, por lo que se convierte en el mayor best-seller.'],
+  ['Exige a sus editores una puntualidad absoluta, dado que su aparición en el mundo editorial no puede retrasarse un año o un año y medio.','Requiere una perfección profesional de sus correctores, puesto que el más mínimo error podría remover la conciencia de los lectores.','Da miedo solo de imaginar una semana con dos miércoles, o que el día de Sant Jordi usurpe la festividad de San José.'],
+  ['El calendario no es como una obra científica a la que se le pueda añadir una fe de erratas.','Tampoco es un volumen de poesía en el que los errores del corrector pasan como un capricho de la inspiración.','Toda esta argumentación nos lleva a la conclusión de que tenemos entre manos una rareza editorial.'],
+  ['Pero eso no es todo.','El destino del calendario no es otro que su progresiva liquidación al ir arrancándole las hojas.','Millones de libros nos sobrevivirán y, entre ellos, habrá muchos que serán ridículos, inactuales o estarán mal escritos.','El calendario es el único libro que no se propone sobrevivir a nuestra muerte, no reclama sinecura sobre el estante de una biblioteca y su vida es, por norma, breve.'],
+  ['En su modestia, ni siquiera sueña con ser concienzudamente leído hoja a hoja, y sus páginas solo incluyen el preciado texto por si acaso.','Hay en él un poco de todo: aniversarios históricos que caen en un determinado día, rimas, grandes frases, chistes, informaciones estadísticas, adivinanzas, advertencias contra el tabaco y consejos varios para combatir a los insectos domésticos.','Una extraordinaria maraña de materias y enormes disonancias: la más excelsa historia junto a la trivialidad del día a día; sentencias de filósofos rivalizando con pronósticos del tiempo rimados; biografías de héroes acariciando benévolamente los prácticos consejos de la tía Clementina...'],
+  ['Los habrá que se escandalicen por ello; pero a nosotros, que vivimos en Cracovia (y, por tanto, en las proximidades de las tumbas reales), nos conmueve la ambigüedad del calendario.','He llegado, incluso, a percibir en él algún tipo de semejanza secreta con las grandes novelas universales, como si el calendario fuese un pariente de la epopeya, un hijo ilegítimo suyo...','Y cuando he tropezado con algún fragmento de un poema mío debajo de una fecha determinada (¡una próspera, espero!) he aceptado el hecho con melancólica humildad.'],
+  ['En el reverso estaba la receta del pastel de queso vienés: medio kilo de queso, una cucharada de fécula de patata, una taza de azúcar, seis cucharadas de mantequilla, cuatro huevos, condimentos aromáticos y pasas.','Y, para finalizar, aprovecho esas pasas para desear un Feliz Año Nuevo a mis magnánimos lectores.']
+ ]};
+
+const T2={ titulo:'La data economy para transformar la región', credito:'Esther Rivaroll, directora general de Alldatum Business.',
+ cuerpo:[
+  'En la era digital, la información se ha convertido en el activo más preciado, al posicionarse como el «nuevo oro» y uno de los «mantras» más repetidos en todos los sectores de negocio. El autor griego Jannis Kallinikos, en su libro La era de la perplejidad, mencionó que cuando los datos están disponibles pueden describir quiénes somos, cuáles son nuestras preferencias y comportamientos, cómo funcionan los mercados y las compañías, entre otras cosas.',
+  'En este contexto, la data economy se posiciona como un motor fundamental que impulsa la innovación, la eficiencia y el crecimiento económico en todo el mundo. América Latina, aunque enfrenta desafíos, vislumbra un futuro prometedor a medida que abraza las oportunidades que esta revolución de información ofrece.',
+  'La economía de los datos puede definirse como el conjunto de iniciativas, actividades y proyectos cuyo modelo de negocio se basa en la exploración y explotación de las estructuras de bases de datos existentes para identificar oportunidades de generación de productos y servicios.',
+  'Para muestra de su potencia, el estudio Data Age 2025, de la consultora IDC, revela que el mercado mundial de datos tuvo un valor de 260.000 millones de dólares en 2022. Para el año 2025, la generación de información ascenderá a un total de 163 zettabytes, lo que aumentará la complejidad en su gestión.',
+  'En Latinoamérica, donde la diversidad cultural y económica es palpable, los datos pueden servir como un puente para cerrar brechas, tomar decisiones informadas, optimizar procesos, personalizar la experiencia del cliente, desarrollar modelos de negocio innovadores, impulsar la transformación digital, mejorar la eficiencia operativa y fomentar la inclusión digital.',
+  'En esa ruta, es necesario superar los retos de la región en materia de privacidad, desigualdad digital y talento experto en datos. Se requieren leyes sólidas que regulen la data economy e impulsen una correcta ética empresarial, así como preparar a los profesionales del manejo de la información.',
+  'La Economía de Datos es un catalizador para el progreso en Latinoamérica. Al abrazar esta revolución de información, Latinoamérica puede labrar un futuro más resiliente, inclusivo y próspero para todos, donde la clave radica en aprovechar el poder de los datos con sabiduría, guiados por valores que impulsen el bienestar común hacia un futuro data driven.'
+ ]};
+
+const T3={ titulo:'¿Existen las feromonas humanas?', credito:'Artículo de divulgación científica.',
+ cuerpo:[
+  'La industria de los perfumes lleva décadas vendiendo «pócimas de amor» capaces de despertar la libido de hombres y mujeres, pero hasta la fecha los científicos aún no han descubierto ninguna feromona humana. El término feromona deriva de las voces griegas pheran, transferir, y horman, excitar. Por definición, son mensajeros químicos emitidos por un individuo que afectan a la fisiología o al comportamiento de otro individuo de la misma especie. Aunque estas sustancias suelen asociarse con la atracción sexual, existe un rango de respuestas más amplio, como la modificación de la agresividad, del cuidado parental o de los niveles hormonales.',
+  'El bombicol, la primera feromona animal identificada, fue descubierto en 1959 por el científico alemán Adolf Butenandt, ganador del Premio Nobel de Química por sus trabajos sobre hormonas sexuales. Es secretado por la hembra del gusano de seda Bombyx mori, que atrae la atención de los machos a kilómetros de distancia. Desde su descubrimiento se han hallado múltiples feromonas en todo tipo de animales, desde insectos y arañas hasta ratones y cerdos.',
+  'En el caso de los humanos, en 1971 Martha McClintock, una estudiante del Wellesley College en Massachusetts, publicó un estudio en la revista Nature en el que concluía que los ciclos menstruales de las mujeres que vivían juntas tendían a sincronizarse. Aunque se cernieron muchas dudas sobre el diseño experimental de este estudio, fue proclamado como la primera prueba de la existencia de feromonas en la especie humana, lo cual desencadenó su búsqueda.',
+  'Unas de las sustancias más estudiadas son la androstenona y el androstenol, ambas secretadas en la axila, porque actúan como feromonas afrodisíacas en los cerdos. También se han investigado en profundidad la androstenediona, que se encuentra en el sudor de los varones, y el estratetraenol, presente en la orina de las mujeres, a raíz de que en 1991 la empresa de fragancias Erox las propuso como feromonas humanas para su comercialización. Sin embargo, los estudios que prueban el efecto excitante de estas sustancias son de dudosa fiabilidad.',
+  'Existen otros contraargumentos con respecto al papel de las feromonas en los humanos: uno de ellos es que el órgano vomeronasal, una estructura quimiosensorial encargada de detectarlas en muchos animales, es vestigial en nuestro organismo. Por otra parte, es muy difícil discernir sus posibles efectos de otros estímulos externos interpretados a través de nuestros sentidos, como la vista o el oído, o incluso del contexto cultural, capaz de condicionar respuestas fisiológicas y conductas.',
+  'Pese a todo, estudios recientes han demostrado algunas evidencias, por ejemplo, que las lágrimas de las mujeres reducen la excitación sexual y los niveles de testosterona de los hombres, o que la secreción de las glándulas areolares en los pezones de una lactante induce una respuesta de succión en los bebés, aunque el niño no sea suyo.',
+  'Ciertamente, la ciencia no ha encontrado todavía las moléculas que estimulan estos comportamientos en nuestros congéneres, pero podría ser que realmente existiesen feromonas humanas, y que algún día las descubramos...'
+ ]};
+
+/* ===================================================================
+   EJES
+   =================================================================== */
+const EJES=[
+ {id:1,nom:'Profundidad del diálogo',corto:'Diálogo',a:'Resolutivo',b:'Conversador',
+  que:'Mide si tratas a la IA como una máquina de respuestas o como un interlocutor al que corriges y vuelves a interrogar.',
+  alto:'Tenerlo alto significa que cuando algo no sirve, no lo parchas: le explicas qué falló. Eso multiplica la calidad de lo que obtienes, porque la primera respuesta de una IA casi nunca es la buena.',
+  refuerza:['Guarda tus mejores conversaciones y reutilízalas como plantilla.','Cuando una respuesta ya sirve, pídele una vez más que la discuta consigo misma.'],
+  fortalece:['Prohíbete usar la primera respuesta. Siempre escribe al menos un mensaje de corrección.','Cuando algo no sirva, escribe qué falló antes de volver a pedir. La frase «no me sirve porque…» es el hábito completo.']},
+ {id:2,nom:'Postura crítica',corto:'Verificación',a:'Confiado',b:'Verificador',
+  que:'Mide si contrastas lo que la IA afirma o si lo aceptas porque suena razonable.',
+  alto:'Tenerlo alto te protege del error más caro: repetir en público un dato inventado con total seguridad. Una IA no distingue entre lo que sabe y lo que completa.',
+  refuerza:['Pide siempre la cita textual y el lugar exacto del documento.','Elige un dato al azar de cada respuesta y verifícalo, aunque el resto parezca sólido.'],
+  fortalece:['Antes de usar cualquier cifra, búscala en su fuente original. Empieza por una por sesión.','Pregúntale a la IA: «¿qué parte de esto no puedes verificar en el documento?». Suele responder con honestidad.']},
+ {id:3,nom:'Autoría',corto:'Autoría',a:'Discreto',b:'Transparente',
+  que:'Mide si declaras el uso de IA y si asumes como propios los errores que vinieron de ella.',
+  alto:'Tenerlo alto sostiene tu credibilidad. Quien lee tu trabajo necesita saber qué juzgó un humano; si lo descubre después, pierde la confianza en todo lo demás.',
+  refuerza:['Escribe declaraciones específicas: qué parte, para qué, y qué revisaste tú.','Cuando corrijas un error de origen IA, di también qué más vas a revisar.'],
+  fortalece:['Añade una línea al final de tus entregas diciendo en qué te ayudó la IA.','Cambia «la IA se equivocó» por «no lo verifiqué». Es la misma frase, con el sujeto correcto.']},
+ {id:4,nom:'Autonomía cognitiva',corto:'Autonomía',a:'Delegador',b:'Protagonista',
+  que:'Mide si usas la IA para pensar mejor o para no tener que pensar.',
+  alto:'Tenerlo alto evita la deuda cognitiva: la sensación de haber entendido algo que en realidad solo leíste resumido. Lo que no procesas, no lo puedes discutir.',
+  refuerza:['Después de cada respuesta útil, cierra la pantalla y explícala en voz alta.','Escribe tus dudas antes de consultar, no después.'],
+  fortalece:['Lee el texto completo antes de pedir cualquier resumen. Aunque sea en diagonal.','Antes de usar una respuesta importante, comprueba si podrías explicarla sin mirarla.']},
+ {id:5,nom:'Ajuste herramienta-tarea',corto:'Herramienta',a:'Fiel a una',b:'Estratega',
+  que:'Mide si eliges la herramienta según lo que necesitas o si usas siempre la misma por costumbre.',
+  alto:'Tenerlo alto cambia los resultados sin cambiar tu habilidad: una herramienta anclada a tu documento cita bien y una generalista argumenta mejor. Usar la equivocada produce errores que parecen tuyos.',
+  refuerza:['Prueba una misma lectura en dos categorías distintas y compara qué aporta cada una.','Registra qué herramienta te funcionó para qué tipo de tarea.'],
+  fortalece:['Antes de abrir nada, pregúntate: ¿necesito citar, contextualizar o discutir?','Para verificar citas, usa siempre una herramienta que trabaje sobre el documento que le subiste.']}
+];
+
+/* ===================================================================
+   1 · TEMPERATURA LECTORA
+   =================================================================== */
+const T1_PALABRAS=[
+ {p:'sinecura',en:true},{p:'penumbra',en:false},{p:'disonancias',en:true},{p:'vestigio',en:false},
+ {p:'epopeya',en:true},{p:'crepúsculo',en:false},{p:'magnánimos',en:true},{p:'efímero',en:false},
+ {p:'maraña',en:true},{p:'reliquia',en:false},{p:'usurpe',en:true},{p:'hojarasca',en:false}];
+const T1_IRONIA=['0-1','1-2','3-3','4-2','5-1','6-1'];
+const T1_ESCALAS=[
+ {t:'El texto habla de un calendario, pero en realidad habla de la muerte.',a:'Habla del calendario',b:'Habla de la muerte'},
+ {t:'La ironía del texto protege una emoción sincera.',a:'Es solo humor',b:'Protege algo sincero'},
+ {t:'Terminar con una receta de pastel de queso es un chiste.',a:'Es un chiste',b:'Es el verdadero final'}];
+const T1_REGISTRO=[
+ 'Sigue en el mismo tono de broma editorial con el que empezó.',
+ 'Aquí entra la muerte y el tono se vuelve serio sin avisar.',
+ 'La mención de las tumbas reales de Cracovia cambia la escala de todo.',
+ 'La receta de cocina rompe con todo lo anterior y devuelve el texto a lo cotidiano.'];
+const T1_REG_PARR=[2,3,5,6];
+const T1_PLANO_GUIA=[
+ {n:'Cuando lees por placer',c:'#E0326B'},
+ {n:'Cuando lees por trabajo o estudio',c:'#5A55E0'},
+ {n:'Cuando leíste este texto',c:'#00937B'}];
+
+/* ===================================================================
+   2 · ACTITUD
+   =================================================================== */
+const ACTITUD_Q=[
+ {eje:1,t:'La respuesta que te dio la IA no te sirve del todo. ¿Qué haces más seguido?',a:'La uso igual y la arreglo yo, o la dejo ahí',b:'Le escribo de nuevo explicándole qué falló'},
+ {eje:1,t:'Tu conversación típica con una IA se parece más a:',a:'Un mensaje y su respuesta',b:'Varios intercambios encadenados'},
+ {eje:2,t:'La IA afirma un dato concreto que no conocías.',a:'Le creo, suena razonable',b:'Lo busco por fuera antes de usarlo'},
+ {eje:2,t:'Para algo que te importa de verdad:',a:'Uso la herramienta de siempre',b:'Pruebo en dos y comparo lo que dicen'},
+ {eje:3,t:'Entregas un trabajo hecho con ayuda de IA.',a:'No hace falta aclararlo',b:'Lo digo y explico en qué me ayudó'},
+ {eje:3,t:'Ese trabajo tiene un error que venía de la IA.',a:'El error lo cometió la herramienta',b:'El error es mío, yo lo entregué'},
+ {eje:4,t:'Te dan un texto largo que tienes que discutir mañana.',a:'Le pido a la IA que me lo resuma y leo eso',b:'Lo leo yo y uso la IA para lo que no entendí'},
+ {eje:4,t:'Usaste una respuesta de IA para algo importante. Al terminar:',a:'Sigo con lo mío, ya está resuelto',b:'Me pregunto si podría explicarlo sin mirar la respuesta'},
+ {eje:5,t:'Necesitas verificar una cita textual de un documento.',a:'Uso la IA de siempre',b:'Elijo una que trabaje anclada al documento y pueda citar'},
+ {eje:5,t:'Quieres que alguien piense en contra de tu propia idea.',a:'Le pido opinión a la de siempre y listo',b:'Busco una herramienta buena para tensionar argumentos'}];
+
+/* ===================================================================
+   3 · DIÁLOGO SOCRÁTICO
+   =================================================================== */
+const ANATOMIA=[
+ {n:'Rol',d:'A quién le hablas. Un fiscal pregunta distinto que un divulgador. El rol decide desde dónde se mira el texto, y un rol simpático con la tesis no va a encontrarle grietas.'},
+ {n:'Freno',d:'La instrucción explícita de no responder todavía. Sin esto, una IA resuelve por defecto: está entrenada para eso. Y si el freno se levanta más adelante en el mismo prompt, no sirvió de nada.'},
+ {n:'Una pregunta',d:'Una sola, y de verdad. «Una pregunta por párrafo» son nueve preguntas disfrazadas de una. El límite existe para que tengas que pensar antes de contestar.'},
+ {n:'Espera',d:'La orden de detenerse hasta que tú respondas. Es lo que impide que la IA haga la pregunta y se la conteste sola en el mismo mensaje.'},
+ {n:'Anclaje',d:'Confinar la respuesta al texto. «El texto y tu conocimiento general» no es anclaje: es permiso para rellenar huecos con material que el autor nunca escribió.'}];
+
+const PARES=[
+ {falla:'Rol',
+  ok:'b',
+  a:'Actúa como un consultor entusiasta de la economía de datos. No me des tu opinión todavía: hazme una sola pregunta sobre el texto de Rivaroll, espera mi respuesta y básate solo en lo que dice el artículo.',
+  b:'Actúa como un analista escéptico que revisa este artículo antes de publicarlo. No me des tu opinión todavía: hazme una sola pregunta sobre el texto de Rivaroll, espera mi respuesta y básate solo en lo que dice el artículo.',
+  por:'Los dos tienen las cinco piezas. La diferencia está en el rol: un consultor entusiasta de la data economy va a preguntar cómo aprovecharla mejor, no si el artículo sostiene lo que afirma. El rol decide qué preguntas son posibles.'},
+ {falla:'Freno',
+  ok:'a',
+  a:'Actúa como un editor exigente. No me adelantes tu lectura: hazme una pregunta sobre qué intereses puede tener quien firma este texto y espera mi respuesta antes de seguir. Solo con lo que está en el artículo.',
+  b:'Actúa como un editor exigente. No me adelantes tu lectura: hazme una pregunta sobre qué intereses puede tener quien firma este texto, espera mi respuesta y luego dame tu análisis completo del artículo. Solo con lo que está en el artículo.',
+  por:'El segundo pone el freno y lo levanta en la misma frase: «y luego dame tu análisis completo». La IA ya sabe que va a resolver, así que su pregunta se convierte en un trámite antes del veredicto. Un freno que anuncia su propio final no es un freno.'},
+ {falla:'Una pregunta',
+  ok:'b',
+  a:'Actúa como un revisor de argumentos. No respondas todavía: hazme una pregunta por cada párrafo del artículo para que revise su solidez, espera mis respuestas y no salgas del texto.',
+  b:'Actúa como un revisor de argumentos. No respondas todavía: hazme una pregunta sobre el párrafo que te parezca más débil, espera mi respuesta y no salgas del texto.',
+  por:'«Una pregunta por cada párrafo» son siete preguntas entregadas de golpe. Vas a contestarlas en bloque y por encima, que es justo lo que la regla quería evitar. Además te ahorra la decisión más valiosa: cuál es el párrafo débil.'},
+ {falla:'Espera',
+  ok:'a',
+  a:'Actúa como alguien que no está convencido por este artículo. No me des conclusiones: pregúntame qué evidencia sostiene la cifra de los 260.000 millones, detente ahí y no avances hasta que yo conteste. Usa únicamente el texto.',
+  b:'Actúa como alguien que no está convencido por este artículo. No me des conclusiones: pregúntame qué evidencia sostiene la cifra de los 260.000 millones y, según lo que suelas ver en estos casos, continúa con lo que siga. Usa únicamente el texto.',
+  por:'«Continúa con lo que siga» le devuelve el control del ritmo. Va a preguntar y a seguir de largo en el mismo mensaje. La espera solo funciona si es una condición: no avances hasta que yo conteste.'},
+ {falla:'Anclaje',
+  ok:'b',
+  a:'Actúa como un investigador de mercados. No me resumas nada: hazme una sola pregunta sobre lo que el artículo deja fuera, espera mi respuesta y apóyate en el texto y en tu conocimiento general del sector.',
+  b:'Actúa como un investigador de mercados. No me resumas nada: hazme una sola pregunta sobre lo que el artículo deja fuera, espera mi respuesta y trabaja solo con el texto; avísame explícitamente si algo que pregunto no está ahí.',
+  por:'«Tu conocimiento general del sector» suena a más rigor y es lo contrario: autoriza a la IA a mezclar lo que dice Rivaroll con lo que sabe de otros lugares, sin marcar la costura. Después vas a atribuirle a ella cosas que nunca escribió.'}];
+
+const TIPOS_LECTURA=[
+ {id:'literal',nom:'Literal',linea:'Fija qué dice el texto exactamente.',
+  rol:'un corrector de pruebas o un archivista: alguien que no interpreta, verifica.',
+  freno:'«No me expliques ni resumas todavía.»',
+  preg:'una pregunta sobre un dato concreto que aparezca escrito.',
+  espera:'«Espera mi respuesta y dime si coincide con el texto.»',
+  anclaje:'«Solo lo que está escrito, sin interpretar.»'},
+ {id:'inferencial',nom:'Inferencial',linea:'Saca a la luz lo que el texto da por supuesto.',
+  rol:'un detective o un traductor: alguien atento a lo que no se dice.',
+  freno:'«No me des tu interpretación todavía.»',
+  preg:'una pregunta sobre qué está dando por supuesto el autor.',
+  espera:'«Espera mi respuesta antes de confirmar o corregir.»',
+  anclaje:'«Solo lo deducible del texto, sin traer datos externos.»'},
+ {id:'critica',nom:'Crítica',linea:'Interroga los intereses del texto.',
+  rol:'un editor exigente o un periodista de investigación.',
+  freno:'«No me digas si el argumento es sólido todavía.»',
+  preg:'una pregunta sobre qué intereses hay detrás o qué queda fuera.',
+  espera:'«Espera mi respuesta y repregunta sobre lo que quede flojo.»',
+  anclaje:'«Solo con lo que el texto afirma y omite.»'},
+ {id:'contra',nom:'Contraargumentativa',linea:'Somete la tesis a su mejor oponente.',
+  rol:'un abogado del diablo o alguien que piensa lo contrario.',
+  freno:'«No refutes el texto todavía.»',
+  preg:'una pregunta que me obligue a construir la objeción más fuerte.',
+  espera:'«Espera mi objeción antes de reforzarla o desarmarla.»',
+  anclaje:'«Partiendo de lo que el texto afirma, sin inventar posiciones.»'}];
+
+const ESCALA_IA=['Me dio todo de una, sin preguntar nada','Preguntó algo, pero después igual me dio la respuesta completa',
+ 'Preguntó varias veces pero se cansó rápido y resolvió por mí','Sostuvo el diálogo, pregunta por pregunta, todo el tiempo que la dejé'];
+
+/* ===================================================================
+   4 · CICLO DE CONSULTA
+   =================================================================== */
+const PASOS=[
+ {n:'Necesidad',d:'Definir qué necesitas de verdad, antes de abrir ninguna herramienta. No es lo mismo necesitar un resumen que necesitar poder discutir el documento en una reunión.'},
+ {n:'Elección y delimitación',d:'Elegir qué herramienta usarás y hasta dónde llega la consulta. Una anclada a tu documento cita bien; una generalista argumenta mejor pero inventa datos.'},
+ {n:'Instrucción',d:'Escribir la instrucción con todo lo que hace falta: rol, foco, formato, límites. Una instrucción incompleta produce una respuesta correcta para otra pregunta.'},
+ {n:'Análisis',d:'Revisar lo que salió buscando errores, imprecisiones y desajustes con lo que pediste. No es leerlo: es auditarlo.'},
+ {n:'Reelaboración',d:'Corregir la instrucción según lo que falló y volver a consultar. Corregir el resultado a mano no reelabora nada: el error va a volver la próxima vez.'},
+ {n:'Confirmación',d:'Verificar con una fuente externa que lo que dice es cierto. Es el paso que más se salta y el que más caro sale, porque el error viaja con tu nombre.'},
+ {n:'Personalización',d:'Insertar el resultado en tu contexto, con tu criterio y tu voz adentro. Lo que entregas sin este paso se nota, aunque sea correcto.'}];
+
+const CASO_CICLO={
+ tit:'El comité de inversión',
+ txt:'Marcela dirige investigación de mercados en una empresa de consumo masivo. Recibe un informe sectorial sobre economía de datos en América Latina para fundamentar una inversión de tres años. Le pide a una IA que le extraiga las cifras clave y con eso arma la recomendación al comité. En la reunión, un director le pregunta si los 260.000 millones de dólares son del mercado global o del latinoamericano, y de qué año es el dato. Marcela no lo sabe: la cifra venía del resumen.',
+ clave:5,
+ ideal:[3,1,2,2,1,5,1],
+ por:'La instrucción de Marcela estuvo bien y el resumen era correcto. Lo que faltó fue volver a la fuente antes de llevar la cifra a un comité que decide una inversión de tres años. Confirmación es el paso más barato de hacer y el más caro de saltarse: cuesta dos minutos y sostiene tu credibilidad delante de un directorio.',
+ lecturas:{
+  0:'Diste mucho peso a Necesidad. Es razonable: Marcela pidió cifras cuando lo que necesitaba era poder defender una recomendación. Pero incluso pidiendo lo correcto, sin verificar habría llegado igual de desarmada al comité.',
+  1:'Diste mucho peso a Elección. Es cierto que una herramienta anclada al informe habría podido citar la página exacta. Aun así, la herramienta no verifica por ti: alguien tiene que abrir la fuente.',
+  2:'Diste mucho peso a Instrucción. Pedir «con la cita y la página» habría ayudado mucho. Es la mejor respuesta después de Confirmación, porque previene el problema en origen.',
+  3:'Diste mucho peso a Análisis. Revisar el resumen habría mostrado que las cifras no traían contexto. Es un buen reflejo, pero el análisis detecta el hueco; solo la confirmación lo cierra.',
+  4:'Diste mucho peso a Reelaboración. Volver a pedir mejor es útil, pero aquí el problema no era la calidad del resumen: era que nadie fue nunca a la fuente.',
+  5:'Pusiste el peso en Confirmación, que es exactamente donde se rompió la cadena.',
+  6:'Diste mucho peso a Personalización. El informe de Marcela sonaba propio, ese no era el problema. La pregunta del director no era de estilo: era de verificación.'}};
+
+/* ===================================================================
+   5 · RUEDA DE HÁBITOS
+   =================================================================== */
+const HABITOS=[
+ {id:'cita',nom:'Cita obligatoria',lema:'Ninguna afirmación sin decir de dónde salió',eje:2,
+  que:'Consiste en exigirle a la IA que, cada vez que afirme algo sobre un documento, indique el lugar exacto y las palabras textuales de donde lo sacó. No es un requisito de formato: es lo que la obliga a moverse dentro de terreno verificable.',
+  porque:'Una IA no distingue entre lo que leyó en tu documento y lo que completa con su entrenamiento, y ambas cosas salen con el mismo tono de seguridad. La cita es el único filtro barato que tienes.',
+  preg:'Le pediste a la IA que sostenga una afirmación sobre el artículo de economía de datos. ¿Cuál de las dos respuestas cumple la regla?',
+  ops:['Como señala la autora a lo largo del artículo, el mercado de datos viene creciendo de forma sostenida y ya mueve cifras enormes a nivel mundial.',
+       'En el cuarto párrafo dice que el estudio Data Age 2025 de IDC cifra el mercado mundial de datos en 260.000 millones de dólares en 2022.'],
+  ok:1,
+  retro:'La segunda dice dónde está, quién lo midió, cuánto y de qué año. Con eso puedes ir a buscar el estudio de IDC y comprobarlo. La primera suena más fluida y no te deja verificar nada: «cifras enormes» no es un dato, es una impresión.',
+  costo:'Si no lo haces: llevas a una reunión una cifra que no puedes defender cuando alguien pregunte de dónde salió. Es exactamente lo que le pasó a Marcela en el ciclo de consulta.'},
+ {id:'resumen',nom:'No resumas antes de leer',lema:'Tu primer contacto con el texto es tuyo',eje:4,tipo:'escritura',
+  que:'Consiste en no pedir el resumen hasta haber tenido tu propio primer contacto con el texto, aunque sea leyendo el título, los subtítulos y las cifras. La IA entra después, para lo que no entendiste.',
+  porque:'Si la IA resume primero, tu lectura se convierte en una comprobación de ese resumen. Lo que el resumen dejó fuera te resulta invisible, y encima no lo notas: sientes que entendiste el texto entero.',
+  preg:'Este es el artículo sobre economía de datos, todavía sin leer. Antes de seguir, escribe tres dudas propias que te genera solo con ver su título, quién lo firma y las cifras que aparecen.',
+  titulo:'La data economy para transformar la región',
+  sub:['Firma: directora general de una empresa de datos','Cifra: 260.000 millones de dólares en 2022','Cifra: 163 zettabytes para 2025','Cierre: «un futuro data driven»'],
+  retro:'Esas tres dudas son tuyas y ninguna IA te las dio. Cuando ahora leas el artículo, vas a leerlo buscando algo, no recibiendo algo. Fíjate si el texto contesta alguna.',
+  costo:'Si no lo haces: lees confirmando el resumen ajeno. En un texto firmado por alguien con interés comercial en el tema, eso significa adoptar su recorte sin haberlo visto.'},
+ {id:'aislar',nom:'Aislar el documento',lema:'Solo lo que está en el texto',eje:2,
+  que:'Consiste en instruir a la IA para que responda únicamente con el contenido del documento que le diste, y para que te avise cuando algo que preguntas no esté ahí. El aviso es la mitad importante de la regla.',
+  porque:'Sin ese límite, la IA completa los huecos con su conocimiento general y no marca la costura. Terminas atribuyéndole al autor ideas que nunca escribió.',
+  preg:'¿Cuál de estas instrucciones confina de verdad a la IA al documento?',
+  ops:['Básate principalmente en el documento que te subí para responder mis preguntas.',
+       'Responde solo con lo que está en el documento y avísame explícitamente cuando algo que pregunto no esté ahí.'],
+  ok:1,
+  retro:'«Principalmente» deja la puerta abierta y la IA la usa. La segunda además le pide que declare los huecos, y esos huecos son justo donde tienes que trabajar tú.',
+  costo:'Si no lo haces: citas en un informe o en un trabajo académico algo que el autor no dijo. El error lleva tu firma, no la de la herramienta.'},
+ {id:'triangular',nom:'Triangular herramientas',lema:'El desempate lo tiene el texto',eje:2,
+  que:'Consiste en contrastar la misma lectura en más de una herramienta, y en resolver las discrepancias volviendo al documento, no eligiendo la respuesta que más se repite o la que suena mejor argumentada.',
+  porque:'Cada herramienta arrastra los sesgos de su entrenamiento y ninguna te avisa cuáles son. Pero triangular mal es peor que no triangular: si desempatas por mayoría, solo delegaste en tres en vez de en una.',
+  preg:'Dos herramientas dieron lecturas opuestas sobre quién se beneficia del artículo de economía de datos. ¿Qué haces?',
+  ops:['Le pregunto a una tercera y me quedo con la respuesta que se repita dos veces.',
+       'Vuelvo al artículo y busco cuál de las dos puede señalarme el pasaje exacto que la sostiene.',
+       'Me quedo con la que argumentó mejor y sonó más segura.'],
+  ok:1,
+  retro:'La mayoría y el tono convincente son dos formas de seguir delegando. El desempate lo tiene el texto: quien pueda señalarte el párrafo, gana.',
+  costo:'Si no lo haces: adoptas el sesgo de la herramienta que mejor escribe, que no es lo mismo que la que mejor lee.'}];
+
+/* ===================================================================
+   6 · AUTORÍA EN PRÁCTICA
+   =================================================================== */
+const AUTORIA=[
+ {ctx:'Entregas un informe de trabajo en el que usaste IA para ordenar la estructura del segundo borrador.',
+  ops:['Este documento fue elaborado con apoyo de herramientas digitales.',
+       'Usé IA para ordenar la estructura del segundo borrador. Los argumentos, las fuentes y la revisión final son míos.'],
+  ok:1,por:'La primera es cierta y no dice nada: «herramientas digitales» también es un procesador de texto. La segunda declara qué parte y deja claro qué sigue siendo tuyo, que es lo único que le importa a quien lee.'},
+ {ctx:'Un compañero encuentra un dato falso en un texto tuyo. El dato venía de la IA.',
+  ops:['Tienes razón, la IA alucinó ese dato. Ya lo quito.',
+       'Tienes razón, ese dato es falso y lo publiqué sin verificarlo. Lo quito y reviso los otros tres.'],
+  ok:1,por:'Las dos corrigen el error. Solo la segunda se hace cargo de la decisión de publicarlo y extiende la sospecha al resto, que es lo que un lector necesita saber para confiar en lo que queda.'},
+ {ctx:'Publicas un artículo escrito íntegramente por ti. Usaste IA solo para corregir ortografía.',
+  ops:['No declaro nada: corregir ortografía no cambia la autoría ni el juicio del lector.',
+       'Declaro igual que usé IA para la corrección, aunque sea menor.'],
+  ok:0,por:'Transparencia no es declarar todo, es declarar lo que cambia el juicio de quien lee. Inflar la declaración la vuelve ruido y hace que las declaraciones importantes se lean como trámite.'},
+ {ctx:'Presentas una tesis. Usaste IA para discutir tus hipótesis y encontrarles debilidades, pero escribiste y decidiste todo tú.',
+  ops:['No lo menciono: la IA no escribió ni una línea del documento.',
+       'Lo declaro en la metodología: usé IA como interlocutor para tensionar hipótesis, y explico cómo.'],
+  ok:1,por:'En un trabajo académico, el método es parte de lo que se evalúa. Que la IA no haya escrito no significa que no haya intervenido en cómo llegaste a tus conclusiones, y eso es exactamente lo que un tribunal quiere saber.'},
+ {ctx:'Tu equipo entrega una propuesta a un cliente. La IA redactó el 70% del texto y ustedes revisaron todo.',
+  ops:['Declaramos que usamos IA en la redacción y que el equipo revisó y validó cada afirmación.',
+       'No declaramos nada: lo revisamos entero, así que en la práctica es nuestro.'],
+  ok:0,por:'Revisar no borra el origen. Si el cliente lo descubre después, lo que pierde no es la confianza en el texto: la pierde en el equipo. Declararlo junto con el alcance de la revisión es lo que sostiene la relación.'},
+ {ctx:'Un colega te pide que revises su artículo. Notas que lo escribió con IA y no lo declara en ninguna parte.',
+  ops:['Se lo comento a él directamente y le explico por qué conviene declararlo.',
+       'Lo comento con el editor, que es quien tiene que decidir.'],
+  ok:0,por:'La transparencia empieza por dar la oportunidad de corregir a quien todavía puede hacerlo. Ir al editor primero convierte un problema de práctica en un problema disciplinario, y no mejora el texto.'},
+ {ctx:'Usaste IA para traducir al español una entrevista que hiciste en inglés. Vas a publicar las citas textuales.',
+  ops:['Indico que las citas fueron traducidas con asistencia de IA y revisadas por mí.',
+       'No lo indico: es una traducción, no una intervención en el contenido.'],
+  ok:0,por:'Una cita textual es un compromiso con las palabras exactas de alguien. Si pasaron por una traducción automática, el lector tiene derecho a saberlo, porque lo que lee entre comillas ya no es literalmente lo que esa persona dijo.'}];
+
+const DECALOGO=[
+ {n:'Declara la función, no la herramienta',d:'«Usé IA para estructurar» dice más que «usé ChatGPT». A quien lee le importa qué hizo la máquina, no cuál era.'},
+ {n:'Declara el alcance',d:'Qué parte del trabajo, en qué fase y qué proporción. «En el segundo borrador» es información; «en el proceso» no lo es.'},
+ {n:'Declara lo que revisaste tú',d:'La declaración no es una confesión: es un mapa de dónde hubo juicio humano. Esa es la parte que sostiene tu credibilidad.'},
+ {n:'No declares lo irrelevante',d:'Si inflas la declaración con correcciones ortográficas, las declaraciones importantes empiezan a leerse como formulario.'},
+ {n:'Los errores son tuyos',d:'«No lo verifiqué» en lugar de «la IA se equivocó». La herramienta no firmó, no entregó y no decidió publicar.'},
+ {n:'Extiende la sospecha',d:'Cuando aparece un error de origen IA, di también qué más vas a revisar. Un error suelto es un accidente; un error sin revisión del resto es un método.'},
+ {n:'Las citas textuales son sagradas',d:'Traducción automática, reescritura o resumen sobre una cita hay que declararlos. Entre comillas va lo que la persona dijo, no su versión mejorada.'},
+ {n:'En lo académico, va en el método',d:'Si la IA participó en cómo llegaste a tus conclusiones, es metodología, aunque no haya escrito una línea.'},
+ {n:'En lo empresarial, va antes de la entrega',d:'Declarar después de que el cliente lo descubra no es transparencia: es control de daños, y ya no funciona.'},
+ {n:'Da la oportunidad de corregir',d:'Cuando detectes uso no declarado en el trabajo de otro, empieza por esa persona. La transparencia es una práctica que se enseña, no una infracción que se reporta.'}];
+
+/* ===================================================================
+   7 · PATRONES DE TEXTO CON IA
+   =================================================================== */
+const ETIQUETAS=[
+ {id:'rep',n:'Patrón repetitivo',d:'Dice lo mismo dos o tres veces con otras palabras.'},
+ {id:'sig',n:'Signo frecuente',d:'Rayas, comillas decorativas, listas de tres, puntuación de manual.'},
+ {id:'len',n:'Lenguaje inusual',d:'Palabras que casi nadie usa hablando: «abrazar», «vislumbrar», «catalizador».'},
+ {id:'for',n:'Fórmula',d:'Estructuras armadas: «no solo… sino también», «en este contexto», «en definitiva».'},
+ {id:'vag',n:'Dato vago',d:'Cifras o autoridades sin nombre, fecha ni fuente: «numerosos expertos», «cifras enormes».'}];
+
+const TEXTOS_IA=[
+ {tit:'Texto 1',ia:true,
+  cuerpo:'La lectura crítica constituye hoy una competencia fundamental para el desarrollo personal, académico y profesional. En este contexto, resulta evidente que no solo permite comprender mejor los textos, sino también formar ciudadanos capaces de discernir. Numerosos especialistas coinciden en señalar que esta habilidad se ha vuelto más necesaria que nunca. Dicho de otro modo, leer críticamente es leer con criterio. En definitiva, se trata de una capacidad que debemos seguir fortaleciendo.',
+  rev:'Es IA. Está la lista de tres en la primera línea, la fórmula «no solo… sino también», la autoridad sin nombre («numerosos especialistas»), y sobre todo dice tres veces lo mismo encadenado con «dicho de otro modo» y «en definitiva». No hay una sola afirmación que se pueda verificar.'},
+ {tit:'Texto 2',ia:true,
+  cuerpo:'La inteligencia artificial está transformando radicalmente la manera en que las organizaciones abordan sus procesos. Es importante destacar que esta transformación no es meramente tecnológica, sino también cultural y organizacional. Las empresas que logren adaptarse obtendrán ventajas significativas, mientras que aquellas que no lo hagan podrían quedar rezagadas. Por lo tanto, resulta crucial adoptar un enfoque estratégico e integral que contemple tanto las oportunidades como los desafíos del nuevo paradigma.',
+  rev:'Es IA. «Es importante destacar», «por lo tanto, resulta crucial», «enfoque estratégico e integral», «el nuevo paradigma». Todo es cierto y nada es concreto: no hay una empresa, un año, un proceso ni una cifra. El texto podría copiarse a cualquier sector cambiando dos palabras.'},
+ {tit:'Texto 3',ia:false,
+  cuerpo:'En la era digital, la información se ha convertido en el activo más preciado, al posicionarse como el «nuevo oro» y uno de los «mantras» más repetidos en todos los sectores de negocio. En este contexto, la data economy se posiciona como un motor fundamental que impulsa la innovación, la eficiencia y el crecimiento económico en todo el mundo. América Latina, aunque enfrenta desafíos, vislumbra un futuro prometedor a medida que abraza las oportunidades que esta revolución de información ofrece.',
+  rev:'Es humano, y es la trampa de este ejercicio. Lo escribió Esther Rivaroll, directora general de una empresa de datos: es el mismo artículo que leíste en otros componentes. Tiene «en este contexto», lista de tres, «abraza», «vislumbra», metáforas gastadas. Todas las marcas que aprendiste a buscar, y ninguna máquina detrás. La conclusión no es que las marcas no sirvan: es que detectan un registro, el de la prosa corporativa, que las IA imitan porque aprendieron de ella. Marcar rastros no es lo mismo que probar autoría.'}];
+
+/* ===================================================================
+   8 · HABILIDAD LECTORA
+   =================================================================== */
+const LECTORA_Q=[
+ {tipo:'multi',eje:'literal',t:'¿Quién descubrió la primera feromona animal identificada y en qué año?',
+  ops:['Martha McClintock, en 1971','Adolf Butenandt, en 1959','La empresa Erox, en 1991','El texto no lo dice'],ok:1,
+  por:'Está en el segundo párrafo, con nombre, año y el dato extra de que ganó el Nobel de Química. Es información explícita: no hay que interpretarla, hay que haberla visto.'},
+ {tipo:'multi',eje:'literal',t:'Según el texto, ¿de qué voces griegas deriva la palabra «feromona»?',
+  ops:['Pheran (transferir) y horman (excitar)','Pherein (llevar) y monos (uno)','Phero (amor) y hormon (señal)','El texto menciona el origen latino, no el griego'],ok:0,
+  por:'Aparece en el primer párrafo. Este tipo de detalle es el primero que se pierde cuando se lee en diagonal, y es justo el que sostiene una definición precisa.'},
+ {tipo:'ordenar',eje:'literal',t:'Ordena los tres hitos según su año, tal como aparecen en el texto.',
+  items:['Butenandt identifica el bombicol en el gusano de seda','McClintock publica en Nature sobre ciclos sincronizados','Erox propone dos sustancias como feromonas humanas'],
+  por:'1959, 1971 y 1991. El texto está construido sobre esa cronología: primero la prueba animal sólida, después el estudio humano dudoso, después la explotación comercial. Reconocer esa secuencia es leer la arquitectura del texto, no solo su contenido.'},
+ {tipo:'multi',eje:'inferencial',t:'Cuando el texto dice que «se cernieron muchas dudas sobre el diseño experimental» del estudio de McClintock, pero que aun así «fue proclamado como la primera prueba», da a entender que:',
+  ops:['El estudio fue posteriormente confirmado por otros científicos','La comunidad aceptó una conclusión que la evidencia no sostenía del todo','McClintock falsificó sus datos deliberadamente','El diseño experimental era irrelevante para la conclusión'],ok:1,
+  por:'El texto no acusa a nadie: pone las dos frases juntas y deja que tú saques la conclusión. Ese contraste entre «había dudas» y «fue proclamado» es la inferencia que el autor construyó sin escribirla.'},
+ {tipo:'marcar',eje:'inferencial',t:'Marca el párrafo donde el autor deja abierta la posibilidad de que su propia conclusión se revierta.',ok:6,
+  por:'El último párrafo dice que la ciencia «no ha encontrado todavía» y que «podría ser que realmente existiesen». Detectar dónde un texto se protege de ser refutado es lectura inferencial: el autor se está reservando una salida.'},
+ {tipo:'multi',eje:'critica',t:'¿Qué gana el texto abriendo con la industria de los perfumes en lugar de con la definición científica?',
+  ops:['Aporta un dato histórico necesario para entender el resto','Enfrenta desde la primera línea una promesa comercial con la falta de evidencia','Demuestra que los perfumes con feromonas funcionan','Cumple con una convención de los textos de divulgación'],ok:1,
+  por:'La primera frase pone «lleva décadas vendiendo» contra «aún no han descubierto». Ese choque instala la posición del texto antes de dar un solo dato. Notar cómo un texto se gana tu acuerdo desde su estructura es lectura crítica.'},
+ {tipo:'escala',eje:'critica',t:'¿Qué tan lejos llega el texto al hablar de la existencia de feromonas humanas?',
+  a:'Afirma que no existen',b:'Afirma que existen',ideal:42,
+  por:'El texto sostiene algo más incómodo que cualquiera de los dos extremos: no se han descubierto, la evidencia disponible es dudosa, y aun así podrían existir. Leerlo como una negación rotunda o como una confirmación es proyectar sobre él una postura que no tiene.'},
+ {tipo:'multi',eje:'critica',t:'El texto menciona que Erox era «una empresa de fragancias» al presentar sus sustancias como feromonas humanas. ¿Qué hace ese dato en el párrafo?',
+  ops:['Da crédito científico a la propuesta de Erox','Señala que quien propuso esas sustancias tenía interés comercial en que lo fueran','Explica cómo se financia la investigación en química','Es un dato accesorio sin función en el argumento'],ok:1,
+  por:'El autor no dice «no les crean»: dice quiénes eran, y deja que el conflicto de interés hable solo. Es el mismo movimiento que hace la primera línea del texto con la industria del perfume.'},
+ {tipo:'multi',eje:'contra',t:'¿Cuál sería la objeción MÁS fuerte contra el argumento del órgano vomeronasal vestigial?',
+  ops:['El órgano vomeronasal no existe en ninguna especie animal','Que un órgano sea vestigial no prueba que su función no se cumpla por otra vía','Butenandt no estudió el órgano vomeronasal','El texto no explica qué significa «vestigial»'],ok:1,
+  por:'Las otras tres atacan detalles o piden aclaraciones. Solo la segunda golpea la estructura del argumento: la ausencia de un mecanismo conocido no prueba la ausencia del fenómeno. Es la diferencia entre discutir con el texto y quejarse de él.'},
+ {tipo:'multi',eje:'contra',t:'¿Cuál de estos hallazgos debilitaría MÁS la posición del texto?',
+  ops:['Un estudio que replique con éxito los resultados de McClintock con diseño riguroso','Una encuesta que muestre que la mayoría cree en las feromonas humanas','El descubrimiento de una nueva feromona en cerdos','Que Erox haya vendido más perfume del que se pensaba'],ok:0,
+  por:'El texto se apoya en que la evidencia humana disponible es de dudosa fiabilidad. Una réplica rigurosa del estudio fundacional ataca justo ese pilar. Las otras tres no tocan el argumento: dos son irrelevantes y una lo refuerza.'}];
+
+const PRACTICAS_LECTORA={
+ literal:['Antes de opinar sobre un texto, vuelve a buscar el dato exacto. La pregunta útil es: ¿en qué párrafo está?',
+  'Cuando leas cifras, anota siempre tres cosas: cuánto, de qué año y quién lo midió.',
+  'Léelo una vez sin subrayar nada. Los subrayados del primer paso suelen marcar lo que te sonó importante, no lo que dice.'],
+ inferencial:['Después de cada párrafo, pregúntate qué tuvo que dar por cierto el autor para escribirlo.',
+  'Busca las concesiones: «aunque», «pese a», «es cierto que». Ahí es donde un texto muestra de qué se está protegiendo.',
+  'Cuando dos frases se ponen juntas sin conector, pregúntate qué relación te están pidiendo que establezcas tú.'],
+ critica:['Antes de leer, mira quién firma y qué gana si le crees.',
+  'Pregúntate qué queda fuera del texto. Lo omitido suele decir más que lo afirmado.',
+  'Identifica en qué momento el texto se ganó tu acuerdo, y con qué recurso: un dato, una anécdota o un tono.'],
+ contra:['Escribe la mejor versión del argumento contrario, no la más fácil de derribar.',
+  'Pregúntate qué hallazgo concreto tendría que aparecer para que el autor tuviera que retractarse.',
+  'Distingue atacar la tesis de atacar los detalles. Pedir aclaraciones no es contraargumentar.']};
+
+/* ===================================================================
+   NAVEGACIÓN
+   =================================================================== */
+const MODULOS=[
+ {id:'sensibilidad',n:'Temperatura lectora',s:'Qué te pasa a ti con un texto',c:'var(--sensibilidad)',ic:'T'},
+ {id:'actitud',n:'Tu actitud frente a la IA',s:'Diez elecciones sin punto medio',c:'var(--actitud)',ic:'A'},
+ {id:'socratico',n:'Diálogo socrático',s:'Pedir preguntas, no respuestas',c:'var(--actitud)',ic:'S'},
+ {id:'ciclo',n:'Ciclo de consulta',s:'Siete pasos y dónde se rompen',c:'var(--proceso)',ic:'C'},
+ {id:'habitos',n:'Rueda de hábitos',s:'Cuatro reglas que sostienen la lectura',c:'var(--actitud)',ic:'H'},
+ {id:'autoria',n:'Autoría en práctica',s:'Reconocer la transparencia real',c:'var(--actitud)',ic:'D'},
+ {id:'patrones',n:'Patrones de texto con IA',s:'Marcar rastros, entrenar el ojo',c:'var(--patrones)',ic:'P'},
+ {id:'lectora',n:'Habilidad lectora',s:'Cuatro niveles sobre un texto',c:'var(--lectora)',ic:'L'}];
+
+let RUTA='inicio',P=0,T={};
+const $=id=>document.getElementById(id);
+const VISTAS={};
+function ir(r){RUTA=r;P=0;T={};pintar();window.scrollTo(0,0)}
+function paso(n){P=n;pintar();window.scrollTo(0,0)}
+function repintar(){pintar()}
+function hechos(){return MODULOS.filter(m=>EST[m.id]==='hecho').length}
+function marcar(id,e){if(EST[id]!=='hecho')EST[id]=e}
+
+function reiniciar(id){
+  if(!confirm('¿Seguro que quieres borrar tus respuestas de este componente y empezarlo de nuevo?'))return;
+  delete EST[id];
+  if(id==='sensibilidad'){S.sensibilidad=null;M1.reset()}
+  if(id==='actitud'){S.actitud={};M2.resp=[];MODULOS.forEach(m=>{if(m.id!=='actitud'&&EST[m.id]==='hecho')reAnotar(m.id)})}
+  if(id==='socratico'){M3.reset();limpiarEje('Socrático')}
+  if(id==='ciclo'){S.ciclo=null;M4.reset()}
+  if(id==='habitos'){S.habitos={};M6.reset();limpiarEje('Hábito')}
+  if(id==='autoria'){S.autoria=null;M7.reset();limpiarEje('Autoría')}
+  if(id==='patrones'){S.patrones=null;M8.reset()}
+  if(id==='lectora'){S.lectora={literal:[],inferencial:[],critica:[],contra:[]};M9.reset()}
+  ir(id);
+}
+function limpiarEje(pref){
+  for(const k in S.actitud) S.actitud[k]=S.actitud[k].filter(x=>x.fuente.indexOf(pref)!==0);
+}
+function reAnotar(){}
+
+function pintar(){
+  const bi=$('barra-in'),at=$('atras'),ti=$('titulo-barra');
+  if(RUTA==='inicio'){bi.classList.add('inicio');at.classList.add('oculto');ti.textContent='Lectura crítica con IA'}
+  else{bi.classList.remove('inicio');at.classList.remove('oculto');
+    ti.textContent = RUTA==='diag'?'Mi diagnóstico':RUTA==='recos'?'Prácticas y recomendaciones':
+      RUTA==='generador'?'Generador de prompts':(MODULOS.find(m=>m.id===RUTA)||{}).n||''}
+  $('cnt-diag').textContent=hechos();
+  $('prog').style.width=Math.round(hechos()/8*100)+'%';
+  $('vista').className='vista';
+  $('vista').innerHTML=VISTAS[RUTA]?VISTAS[RUTA]():'';
+}
+$('atras').onclick=()=>ir('inicio');
+$('ir-diag').onclick=()=>ir('diag');
+
+/* barra de "ya completado" reutilizable */
+function barraHecho(id,txt){
+  return `<div class="aviso hecho"><span class="t">Ya completaste este componente</span>${txt}
+    <div style="margin-top:11px"><button class="btn peligro chico" onclick="reiniciar('${id}')">Reiniciar este diagnóstico</button></div></div>`;
+}
+function lectura(txt,extra){
+  const cuerpo = txt.parrafos ? txt.parrafos.map(p=>`<p>${p.join(' ')}</p>`).join('') : txt.cuerpo.map(p=>`<p>${p}</p>`).join('');
+  return `<div class="tarjeta"><div class="lectura"><h4>Texto de trabajo</h4>
+    <div class="tit">${txt.titulo}</div>${cuerpo}
+    <div class="credito">${txt.credito}</div></div></div>${extra||''}`;
+}
+function releer(txt){
+  const cuerpo = txt.cuerpo.map(p=>`<p>${p}</p>`).join('');
+  return `<details><summary>Releer el texto</summary><div class="tarjeta"><div class="lectura" style="font-size:17px">
+    <div class="tit">${txt.titulo}</div>${cuerpo}</div></div></details>`;
+}
+
+/* ---------------- INICIO ---------------- */
+VISTAS.inicio=()=>`
+ <div class="portada">
+   <div class="marca"><span class="punto"></span> Taller de lectura crítica con IA</div>
+   <h1>Ocho maneras de mirarte leyendo.</h1>
+   <p class="entrada">Entra por donde quieras. Cada ejercicio suma un dato a tu diagnóstico y ninguno depende de los otros. No hay orden correcto ni respuestas que sumen puntos: hay un retrato que se va armando.</p>
+   <div class="aviso"><span class="t">Antes de empezar</span>Nada de esto se guarda en un servidor. Si cierras la pestaña, se borra. Por eso al final vas a poder descargar tu informe.</div>
+ </div>
+ <h2 style="margin-top:24px">Los ocho componentes</h2>
+ <div class="lista-modulos">
+ ${MODULOS.map(m=>{const e=EST[m.id];
+   const et=e==='hecho'?'<span class="mod-est hecho">✓ Hecho</span>':e==='curso'?'<span class="mod-est curso">En curso</span>':'<span class="mod-est">Sin empezar</span>';
+   return `<button class="mod" onclick="ir('${m.id}')"><span class="mod-ic" style="background:${m.c}">${m.ic}</span>
+     <span class="mod-txt"><span class="mod-nom">${m.n}</span><span class="mod-sub">${m.s}</span></span>${et}</button>`}).join('')}
+ </div>
+ <h2>Herramienta</h2>
+ <button class="mod" style="max-width:none" onclick="ir('generador')">
+   <span class="mod-ic" style="background:var(--tinta)">G</span>
+   <span class="mod-txt"><span class="mod-nom">Generador de prompts</span><span class="mod-sub">Fuera del diagnóstico. Úsalo cuando leas en serio.</span></span>
+   <span class="mod-est">Abrir</span></button>
+ <div class="acciones" style="margin-top:22px">
+   <button class="btn" onclick="ir('diag')">Ver mi diagnóstico${hechos()?` (${hechos()}/8)`:''}</button>
+   ${hechos()===8?`<button class="btn sec" onclick="ir('recos')">Prácticas y recomendaciones</button>`:''}
+ </div>`;
+
+/* ---------------- GENERADOR (pendiente) ---------------- */
+VISTAS.generador=()=>`
+ <h1>Generador de prompts</h1>
+ <p class="entrada">Esta herramienta está fuera del diagnóstico: no suma datos a ningún radar y puedes usarla cuando quieras, tantas veces como quieras.</p>
+ <div class="vacio" style="padding:34px 22px">
+   <div style="font-size:17px;font-weight:640;color:var(--tinta);margin-bottom:8px">En construcción</div>
+   La lógica de esta herramienta se está definiendo. Va a permitirte armar prompts de lectura por tipo, rol y foco, con la regla de diálogo incorporada.
+ </div>
+ <button class="btn sec ancho" onclick="ir('inicio')" style="margin-top:18px">Volver al menú</button>`;
+
+/* ===================================================================
+   1 · TEMPERATURA LECTORA
+   =================================================================== */
+const M1={
+ pal:[],tono:null,esc:[50,50,50],reg:null,pts:[],
+ reset(){this.pal=[];this.tono=null;this.esc=[50,50,50];this.reg=null;this.pts=[]},
+ toggle(i){const k=this.pal.indexOf(i);if(k>=0)this.pal.splice(k,1);else if(this.pal.length<3)this.pal.push(i);repintar()},
+ setTono(i,j){this.tono=i+'-'+j;repintar()},
+ setEsc(i,v){this.esc[i]=+v},
+ setReg(i){this.reg=i;repintar()},
+ poner(ev){
+  if(this.pts.length>=3)return;
+  const el=$('plano'),r=el.getBoundingClientRect(),t=ev.touches?ev.touches[0]:ev;
+  const x=Math.max(0,Math.min(1,(t.clientX-r.left)/r.width));
+  const y=Math.max(0,Math.min(1,(t.clientY-r.top)/r.height));
+  this.pts.push({x:Math.round(x*100),y:Math.round((1-y)*100)});repintar();
+ },
+ quitar(){this.pts.pop();repintar()},
+ cerrar(){
+  S.sensibilidad={palabras:this.pal.slice(),aciertos:this.pal.filter(i=>T1_PALABRAS[i].en).length,
+   tono:this.tono,ironia:T1_IRONIA.includes(this.tono),esc:this.esc.slice(),reg:this.reg,pts:this.pts.slice()};
+  EST.sensibilidad='hecho';paso(6);
+ }};
+
+VISTAS.sensibilidad=()=>{
+ const done=EST.sensibilidad==='hecho';
+ if(done&&P===0)P=6;
+ if(P===0){marcar('sensibilidad','curso');return `
+  <h1>Temperatura lectora</h1>
+  <p class="entrada">Este ejercicio no mide si entendiste el texto. Mide qué te pasó con él: qué palabras te quedaron sonando, dónde oíste la ironía, en qué momento cambió el tono y hasta dónde te dejaste llevar.</p>
+  <div class="aviso enseña"><span class="t">No hay respuestas correctas aquí</span>Son cinco momentos cortos. Lo que sale al final es un retrato, no una nota.</div>
+  ${lectura(T1)}
+  <button class="btn ancho" onclick="paso(1)">Ya lo leí, empezar</button>`}
+
+ const cab=n=>`<div class="pasos">${[1,2,3,4,5].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div><div class="etiqueta-paso">${n} de 5</div>`;
+
+ if(P===1)return cab(1)+`
+  <h2 class="mt0">Elige tres palabras que estén en el texto y que te hayan gustado por cómo suenan.</h2>
+  <p class="nota">Cuidado: no todas las de abajo aparecen en el texto.</p>
+  <div class="chips">${T1_PALABRAS.map((w,i)=>`<button class="chip ${M1.pal.includes(i)?'sel':''}" onclick="M1.toggle(${i})">${w.p}</button>`).join('')}</div>
+  <span class="contador">${M1.pal.length} de 3</span>
+  <button class="btn ancho" ${M1.pal.length===3?'':'disabled'} onclick="paso(2)" style="margin-top:16px">Continuar</button>`;
+
+ if(P===2)return cab(2)+`
+  <h2 class="mt0">Toca la frase donde más se nota que la autora está siendo irónica.</h2>
+  <div class="tarjeta"><div class="lectura">${T1.parrafos.map((p,i)=>'<p>'+p.map((f,j)=>
+    `<span class="frase ${M1.tono===i+'-'+j?'sel':''}" onclick="M1.setTono(${i},${j})">${f}</span>`).join(' ')+'</p>').join('')}</div></div>
+  <button class="btn ancho" ${M1.tono?'':'disabled'} onclick="paso(3)">Continuar</button>`;
+
+ if(P===3)return cab(3)+`
+  <h2 class="mt0">Mueve cada barra hasta donde estés de acuerdo.</h2>
+  <p class="nota">Las tres afirmaciones se pueden defender desde los dos extremos. Lo interesante es dónde te paras tú.</p>
+  ${T1_ESCALAS.map((e,i)=>`<div class="escala"><div class="enun">${e.t}</div>
+   <input type="range" min="0" max="100" value="${M1.esc[i]}" oninput="M1.setEsc(${i},this.value)" aria-label="${e.t}">
+   <div class="polos"><span>${e.a}</span><span>${e.b}</span></div></div>`).join('')}
+  <button class="btn ancho" onclick="paso(4)">Continuar</button>`;
+
+ if(P===4)return cab(4)+`
+  <h2 class="mt0">¿En qué momento sentiste que el texto cambiaba de tono?</h2>
+  <p class="nota">Toca el párrafo donde notaste el cambio.</p>
+  <div class="tarjeta"><div class="lectura">${T1_REG_PARR.map((pi,i)=>
+    `<span class="parr-sel ${M1.reg===i?'sel':''}" onclick="M1.setReg(${i})">${T1.parrafos[pi].join(' ')}</span>`).join('')}</div></div>
+  <button class="btn ancho" ${M1.reg!==null?'':'disabled'} onclick="paso(5)">Continuar</button>`;
+
+ if(P===5)return cab(5)+`
+  <h2 class="mt0">Ubica tres puntos en el plano.</h2>
+  <p class="nota">Uno por cada situación de lectura. Toca el plano para colocarlos, en orden.</p>
+  <div class="plano-guia">${T1_PLANO_GUIA.map((g,i)=>`<div class="guia-it ${M1.pts.length===i?'act':M1.pts.length>i?'ok':''}">
+    <span class="n">${i+1}</span><span>${g.n}</span></div>`).join('')}</div>
+  <div class="plano-cont"><div class="plano" id="plano" onclick="M1.poner(event)">
+    <span class="eje h"></span><span class="eje v"></span>
+    <span class="plano-lbl arr">Desconfío del texto</span><span class="plano-lbl aba">Me dejo llevar</span>
+    <span class="plano-lbl izq">Leo para sentir</span><span class="plano-lbl der">Leo para entender</span>
+    ${M1.pts.map((p,i)=>`<span class="pt" style="left:${p.x}%;top:${100-p.y}%;background:${T1_PLANO_GUIA[i].c}">${i+1}</span>`).join('')}
+  </div></div>
+  <div class="fila">${M1.pts.length?`<button class="btn sec chico" onclick="M1.quitar()">Quitar el último</button>`:''}</div>
+  <button class="btn ancho" ${M1.pts.length===3?'':'disabled'} onclick="M1.cerrar()" style="margin-top:14px">Ver mi temperatura</button>`;
+
+ const d=S.sensibilidad;
+ return `${barraHecho('sensibilidad','Puedes revisar tu retrato abajo o empezarlo de nuevo.')}
+  <h1>Tu temperatura lectora</h1>
+  ${prosaSensible(d)}
+  <h2>Cómo lees, según dónde te ubicaste</h2>
+  ${planoSVG(d.pts)}
+  <p class="nota">${dispersionTxt(d.pts)}</p>
+  <h2>Tus inclinaciones</h2>
+  ${barrasDiv(d)}
+  <div class="tarjeta"><h3 class="mt0">Las palabras que elegiste</h3>
+   <div class="chips" style="margin:10px 0 0">${d.palabras.map(i=>`<span class="chip ${T1_PALABRAS[i].en?'rev-si':'rev-no'}">${T1_PALABRAS[i].p}</span>`).join('')}</div>
+   <p class="nota" style="margin-top:12px">${d.aciertos===3?'Las tres estaban en el texto. Elegiste desde lo que leíste, no desde lo que te sonaba bonito.':d.aciertos===0?'Ninguna de las tres estaba en el texto. Elegiste palabras hermosas, pero de otro texto: el que imaginaste mientras leías.':`${d.aciertos} de 3 estaban en el texto. Las otras las trajiste tú: son las palabras que el texto te sugirió sin escribirlas.`}</p></div>
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
+};
+
+function centroide(pts){return {x:pts.reduce((s,p)=>s+p.x,0)/pts.length, y:pts.reduce((s,p)=>s+p.y,0)/pts.length}}
+function dispersion(pts){const c=centroide(pts);
+ return Math.round(pts.reduce((s,p)=>s+Math.hypot(p.x-c.x,p.y-c.y),0)/pts.length)}
+
+function prosaSensible(d){
+ const c=centroide(d.pts),disp=dispersion(d.pts);
+ const ejeX=c.x<40?'sentir':c.x>60?'entender':'medio-x';
+ const ejeY=c.y<40?'llevar':c.y>60?'desconfiar':'medio-y';
+ let p1;
+ if(ejeX==='sentir')p1='Tu lectura se apoya en lo sensorial: el sonido de las palabras, el ritmo, la textura de la prosa. Ves cosas que un lector puramente analítico se pierde, sobre todo en textos como este, donde la ironía vive en el tono más que en el contenido.';
+ else if(ejeX==='entender')p1='Tu lectura es de extracción: vas al argumento, al dato, a lo que el texto sostiene. Es eficiente y funciona muy bien con textos que informan. Con textos que además hacen algo mientras informan, como este, corres el riesgo de leer solo la mitad.';
+ else p1='Te mueves entre lo sensorial y lo analítico sin instalarte en ninguno. Es una posición cómoda para leer casi cualquier cosa, y también la más fácil de perder cuando un texto exige comprometerse con una manera de leer.';
+ let p2;
+ if(ejeY==='llevar')p2='Y te entregas: entras en el texto y lo dejas hacer su trabajo. Eso es una virtud para leer literatura y un riesgo para leer textos que quieren convencerte de algo. La pregunta que te falta hacer más seguido no es qué dice, sino qué me está haciendo mientras lo dice.';
+ else if(ejeY==='desconfiar')p2='Y lees con la guardia arriba: sospechas por defecto, buscas la costura. Es una defensa útil frente a textos interesados, pero con un texto que no quiere venderte nada puede impedirte entrar. Sospechar cuesta atención que no está yendo a otra parte.';
+ else p2='Y tu grado de entrega es intermedio: ni te abandonas ni te blindas. En la práctica eso suele significar que ajustas según el texto, lo cual es exactamente lo que hay que hacer, siempre que sea una decisión y no una indefinición.';
+ let p3;
+ if(disp<=12)p3=`Los tres puntos que colocaste están muy juntos (dispersión de ${disp} sobre 100). Lees más o menos igual leas lo que leas: tienes una manera propia y estable. Eso da consistencia, y también significa que un texto que pide otro modo de lectura te va a encontrar con el mismo repertorio.`;
+ else if(disp>=28)p3=`Los tres puntos están muy separados (dispersión de ${disp} sobre 100). Cambias de modo de lectura según lo que tengas delante: no lees igual por placer que por trabajo. Es un repertorio amplio, y lo que conviene revisar es si el cambio lo decides tú o lo decide el formato del texto.`;
+ else p3=`Tus tres puntos tienen una separación moderada (dispersión de ${disp} sobre 100). Ajustas algo tu manera de leer según el contexto, sin cambiar de raíz. Es lo más frecuente.`;
+ const p4=d.ironia
+  ?'En la ironía acertaste el tipo de frase: marcaste un lugar donde el texto gira y dice una cosa para significar otra. Ahí es donde vive.'
+  :'En la ironía marcaste una frase más descriptiva. No está mal, porque el texto entero es irónico. Pero la ironía se concentra donde hay un giro, como en el cierre, donde la autora usa las pasas de una receta de cocina para despedirse de sus lectores.';
+ return `<p>${p1} ${p2}</p><p>${p3}</p><p>${p4}</p>`;
+}
+function dispersionTxt(pts){
+ return `El punto grande es tu centro: el promedio de las tres situaciones. El área sombreada muestra cuánto se mueve tu lectura entre una situación y otra.`;
+}
+
+/* ===================================================================
+   2 · ACTITUD FRENTE A LA IA
+   =================================================================== */
+const M2={resp:[],
+ elegir(polo){this.resp[P]=polo;
+  if(P<ACTITUD_Q.length-1)paso(P+1);
+  else{ACTITUD_Q.forEach((q,i)=>anotaEje(q.eje,this.resp[i],'Actitud inicial'));EST.actitud='hecho';paso(ACTITUD_Q.length)}}};
+
+VISTAS.actitud=()=>{
+ const done=EST.actitud==='hecho';
+ if(done&&P<ACTITUD_Q.length)P=ACTITUD_Q.length;
+ if(P<ACTITUD_Q.length){
+  const q=ACTITUD_Q[P],e=EJES.find(x=>x.id===q.eje);
+  if(P===0)marcar('actitud','curso');
+  return `<div class="pasos">${ACTITUD_Q.map((_,i)=>`<i class="${i<=P?'on':''}"></i>`).join('')}</div>
+   <div class="etiqueta-paso">Pregunta ${P+1} de 10 · ${e.nom}</div>
+   <h2 class="mt0" style="font-size:23px">${q.t}</h2>
+   <p class="nota">No hay punto medio a propósito. Elige lo que haces más seguido, no lo que preferirías hacer.</p>
+   <div class="ops">
+    <button class="op ${M2.resp[P]===0?'sel':''}" onclick="M2.elegir(0)"><span class="letra">A</span><span>${q.a}</span></button>
+    <button class="op ${M2.resp[P]===1?'sel':''}" onclick="M2.elegir(1)"><span class="letra">B</span><span>${q.b}</span></button></div>`;
+ }
+ const res=resumenPentagono();
+ const orden=EJES.map(e=>({e,v:ejeVal(e.id)})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
+ const fuertes=orden.slice(0,2),debiles=orden.slice(-2).reverse();
+ return `${barraHecho('actitud','Tus diez respuestas quedaron registradas y alimentan el pentágono.')}
+  <h1>Tu punto de partida</h1>
+  <p class="entrada">Esto es lo que declaraste sobre ti. Los otros ejercicios ponen esas declaraciones a prueba con lo que realmente haces.</p>
+  ${radarSVG(EJES.map(e=>e.corto),EJES.map(e=>ejeVal(e.id)??0),'#5A55E0')}
+  <div class="tarjeta">${EJES.map(e=>{const v=ejeVal(e.id);return `<div style="padding:10px 0;border-bottom:1px solid var(--linea)">
+    <div style="display:flex;justify-content:space-between;font-size:15px"><b style="font-weight:660">${e.nom}</b><span style="color:var(--tinta-suave)">${v>=50?e.b:e.a}</span></div>
+    <div class="medidor"><i style="width:${v}%;background:var(--actitud)"></i></div></div>`}).join('')}</div>
+  <div class="aviso"><span class="t">${res.titulo}</span>${res.texto}</div>
+
+  <h2>Qué practicar</h2>
+  <div class="tarjeta"><h3 class="mt0" style="color:var(--ok)">Para sostener lo que ya tienes fuerte</h3>
+   ${fuertes.map(({e})=>`<p style="margin:10px 0 4px"><b>${e.nom}</b></p>${e.refuerza.map(r=>`<p class="nota" style="margin:3px 0">· ${r}</p>`).join('')}`).join('')}</div>
+  <div class="tarjeta"><h3 class="mt0" style="color:var(--proceso)">Para levantar lo que está flojo</h3>
+   ${debiles.map(({e})=>`<p style="margin:10px 0 4px"><b>${e.nom}</b></p>${e.fortalece.map(r=>`<p class="nota" style="margin:3px 0">· ${r}</p>`).join('')}`).join('')}</div>
+
+  <h2>Qué mide cada eje</h2>
+  ${EJES.map(e=>`<details><summary>${e.nom}: ${e.a} ↔ ${e.b}</summary>
+   <div class="tarjeta plana"><p style="margin:0 0 10px">${e.que}</p><p style="margin:0"><b>Por qué conviene tenerlo alto.</b> ${e.alto}</p></div></details>`).join('')}
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
+};
+
+/* ===================================================================
+   3 · DIÁLOGO SOCRÁTICO
+   =================================================================== */
+const M3={
+ pares:[],tipo:null,campos:{rol:'',freno:'',preg:'',espera:'',anclaje:''},nota:null,chk:null,
+ reset(){this.pares=[];this.tipo=null;this.campos={rol:'',freno:'',preg:'',espera:'',anclaje:''};this.nota=null;this.chk=null},
+ elegir(i,op){if(this.pares[i]!==undefined)return;this.pares[i]=op;repintar()},
+ setCampo(k,v){this.campos[k]=v},
+ promptFinal(){const c=this.campos;return [c.rol,c.freno,c.preg,c.espera,c.anclaje].filter(x=>x.trim()).join(' ')},
+ calificar(n){this.nota=n;anotaEje(1,n>=3?1:0,'Socrático · resultado');paso(4)},
+ evaluar(){
+  const c=this.campos,ll=k=>c[k].trim().length>=8;
+  this.chk=[
+   {n:'Rol',ok:ll('rol'),d:'Sin rol, la IA responde con su voz por defecto, que es la de un asistente servicial.'},
+   {n:'Freno',ok:ll('freno'),d:'Es la pieza que más se olvida y la que más cambia el resultado.'},
+   {n:'Una pregunta',ok:ll('preg'),d:'Sin el límite de una por vez, recibes un cuestionario y contestas en bloque.'},
+   {n:'Espera',ok:ll('espera'),d:'Sin esto la IA hace la pregunta y se la contesta sola en el mismo mensaje.'},
+   {n:'Anclaje',ok:ll('anclaje'),d:'Sin anclaje, completa los huecos con lo que sabe de otro lado y no te avisa.'}];
+  anotaEje(1,this.chk.filter(x=>x.ok).length>=4?1:0,'Socrático · prompt propio');
+  EST.socratico='hecho';paso(6);
+ }};
+
+VISTAS.socratico=()=>{
+ const done=EST.socratico==='hecho';
+ if(done&&P===0)P=6;
+ if(P===0){marcar('socratico','curso');return `
+  <h1>Diálogo socrático</h1>
+  <p class="entrada">Sócrates no explicaba nada. Preguntaba hasta que el otro se escuchaba pensar. Este ejercicio te enseña a pedirle eso mismo a una IA, que por defecto hace justo lo contrario.</p>
+  <div class="aviso"><span class="t">La regla del taller</span>Nunca le pidas la respuesta al modelo. Pídele que te haga la pregunta.</div>
+  ${lectura(T2)}
+  <button class="btn ancho" onclick="paso(1)">Empezar</button>`}
+
+ if(P===1){
+  const listo=M3.pares.filter(x=>x!==undefined).length===5;
+  return `<div class="etiqueta-paso">1 de 4 · Reconocer</div>
+   <h2 class="mt0">Elige el prompt que consideras más útil para hacer un análisis crítico del texto.</h2>
+   <p class="nota">Los dos parecen correctos y los dos tienen las cinco piezas. Solo uno funciona.</p>
+   ${PARES.map((p,i)=>{const el=M3.pares[i],r=el!==undefined;
+    const cls=o=>!r?'':(o===p.ok?'bien':(o===el?'mal':'apagada'));
+    return `<div class="tarjeta ancha"><h3 class="mt0">Par ${i+1}</h3>
+     <div class="ops ancha">
+      <button class="op ${cls('a')}" ${r?'disabled':''} onclick="M3.elegir(${i},'a')"><span class="letra">A</span><span>${p.a}</span></button>
+      <button class="op ${cls('b')}" ${r?'disabled':''} onclick="M3.elegir(${i},'b')"><span class="letra">B</span><span>${p.b}</span></button></div>
+     ${r?`<div class="retro ${el===p.ok?'bien':'mal'}" style="max-width:none"><div class="cab">${el===p.ok?'✓ Ese es':'Era el otro'} · la pieza que falla es ${p.falla}</div><p>${p.por}</p></div>`:''}</div>`}).join('')}
+   <button class="btn ancho" ${listo?'':'disabled'} onclick="paso(2)">Ver la anatomía completa</button>`}
+
+ if(P===2)return `<div class="etiqueta-paso">2 de 4 · La anatomía</div>
+  <h2 class="mt0">Las cinco piezas, una por una.</h2>
+  <p>En cada par que acabas de ver fallaba una sola. Así es como funcionan cuando están bien puestas.</p>
+  ${ANATOMIA.map((f,i)=>`<div class="tarjeta"><h3 class="mt0">${i+1}. ${f.n}</h3><p style="margin:0">${f.d}</p></div>`).join('')}
+  <div class="aviso ojo"><span class="t">Por qué funcionan juntas</span>Una IA está entrenada para resolver. Cada pieza le quita una vía de escape hacia la respuesta rápida. Quita una sola y vuelve a resolver por ti: es exactamente lo que viste en los cinco pares.</div>
+  <button class="btn ancho" onclick="paso(3)">Escribir el mío</button>`;
+
+ if(P===3){
+  const t=TIPOS_LECTURA.find(x=>x.id===M3.tipo);
+  const c=M3.campos,lleno=Object.values(c).filter(v=>v.trim().length>=8).length;
+  const campo=(k,lbl,guia,ph)=>`<div class="tarjeta"><h3 class="mt0">${lbl}</h3>
+    <p class="nota" style="margin:0 0 9px">${guia}</p>
+    <textarea style="min-height:62px" placeholder="${ph}" oninput="M3.setCampo('${k}',this.value)">${esc(c[k])}</textarea></div>`;
+  return `<div class="etiqueta-paso">3 de 4 · Sin opciones</div>
+   <h2 class="mt0">Ahora escríbelo tú.</h2>
+   <div class="aviso"><span class="t">La situación</span>Tienes que estudiar un capítulo de un manual técnico que no entiendes del todo y mañana te van a preguntar sobre él. Escribe el prompt que le darías a una IA, pieza por pieza.</div>
+   <h3>Primero, ¿qué tipo de lectura quieres hacer?</h3>
+   <div class="ops">${TIPOS_LECTURA.map(x=>`<button class="op ${M3.tipo===x.id?'sel':''}" onclick="M3.tipo='${x.id}';repintar()">
+     <span class="letra">${x.nom[0]}</span><span><b>${x.nom}</b><br><span class="nota">${x.linea}</span></span></button>`).join('')}</div>
+   ${!t?'':`
+   <p class="nota">Las indicaciones de cada casilla cambiaron según el tipo que elegiste.</p>
+   ${campo('rol','1 · Rol','Para lectura '+t.nom.toLowerCase()+' conviene '+t.rol,'Actúa como…')}
+   ${campo('freno','2 · Freno','Algo equivalente a: '+t.freno,'No me des…')}
+   ${campo('preg','3 · Una pregunta','Pídele '+t.preg,'Hazme una sola pregunta sobre…')}
+   ${campo('espera','4 · Espera','Algo equivalente a: '+t.espera,'Espera mi respuesta…')}
+   ${campo('anclaje','5 · Anclaje','Algo equivalente a: '+t.anclaje,'Responde solo con…')}
+   <h3>Tu prompt armado</h3>
+   <div class="tarjeta plana"><p class="lectura" style="font-size:17px;margin:0">${M3.promptFinal()?esc(M3.promptFinal()):'<span style="color:var(--tinta-suave)">Se irá armando a medida que llenes las casillas.</span>'}</p></div>
+   <span class="contador">${lleno} de 5 piezas escritas</span>
+   <div class="acciones"><button class="btn sec" onclick="copiar(M3.promptFinal(),this)">Copiar</button>
+    <button class="btn" ${lleno>=1?'':'disabled'} onclick="M3.evaluar()">Revisar mi prompt</button></div>`}`}
+
+ if(P===4){
+  if(M3.nota===null)return `<div class="etiqueta-paso">4 de 4 · Probar</div>
+   <h2 class="mt0">Pega tu prompt en la IA que uses y vuelve. ¿Cómo se portó?</h2>
+   <p class="nota">Si no llegaste a probarlo, elige lo que esperarías que pase.</p>
+   <div class="ops">${ESCALA_IA.map((e,i)=>`<button class="op" onclick="M3.calificar(${i+1})"><span class="letra">${i+1}</span><span>${e}</span></button>`).join('')}</div>`;
+  return `<h2 class="mt0">${M3.nota>=3?'Sostuvo el diálogo.':'Se escapó hacia la respuesta.'}</h2>
+   <div class="retro ${M3.nota>=3?'bien':'mal'}"><div class="cab">${M3.nota>=3?'Buen resultado':'Pasa muy seguido'}</div>
+   <p>${M3.nota>=3?'Cuando una IA sostiene el diálogo, la conversación empieza a parecerse a una clase particular. Guarda ese prompt.':'La mayoría cede a la mitad: pregunta una vez y después resuelve todo junto. La salida es insistir dentro de la misma conversación: «no me diste tiempo a contestar, vuelve a preguntarme de a una».'}</p></div>
+   <button class="btn ancho" onclick="paso(6)">Ver mi resultado</button>`}
+
+ const p=M3.chk?M3.chk.filter(x=>x.ok).length:0;
+ return `${barraHecho('socratico','Tu prompt y las cinco piezas quedaron registrados.')}
+  <h1>${p}<span style="color:var(--tinta-suave)"> de 5 piezas</span></h1>
+  <p class="entrada">${p===5?'Escribiste la anatomía completa. Eso es haberla entendido, no memorizado.':p>=3?'Tienes lo esencial. Lo que falta son justo las piezas que la IA usa como vía de escape.':'Todavía le estás pidiendo a la IA que resuelva. Mira qué piezas quedaron vacías: cada una es una puerta abierta.'}</p>
+  <div class="tarjeta">${(M3.chk||[]).map(c=>`<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--linea)">
+   <span style="flex:0 0 22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:${c.ok?'var(--ok)':'var(--linea-fuerte)'}">${c.ok?'✓':'—'}</span>
+   <span><b>${c.n}</b>${c.ok?'':`<span class="nota" style="display:block">${c.d}</span>`}</span></div>`).join('')}</div>
+  <div class="tarjeta plana"><h3 class="mt0">Tu prompt</h3><p class="lectura" style="font-size:16.5px;margin:0">${M3.promptFinal()?esc(M3.promptFinal()):'—'}</p></div>
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
+};
+
+/* ===================================================================
+   4 · CICLO DE CONSULTA
+   =================================================================== */
+const M4={
+ asig:{},verif:false,pesos:null,
+ reset(){this.asig={};this.verif=false;this.pesos=null},
+ poner(paso,pos){
+  if(this.verif)return;
+  for(const k in this.asig) if(this.asig[k]===pos) delete this.asig[k];
+  if(pos==='') delete this.asig[paso]; else this.asig[paso]=+pos;
+  repintar();
+ },
+ verificar(){this.verif=true;repintar()},
+ initPesos(){if(!this.pesos)this.pesos=[0,0,0,0,0,0,0]},
+ ajustar(i,d){const u=this.pesos.reduce((a,b)=>a+b,0);
+  if(d>0&&u>=15)return;if(d<0&&this.pesos[i]<=0)return;this.pesos[i]+=d;repintar()},
+ confirmar(){
+  const mx=Math.max(...this.pesos);
+  S.ciclo={orden:Object.keys(this.asig).map(k=>({p:+k,pos:this.asig[k]})),
+   aciertosOrden:Object.keys(this.asig).filter(k=>this.asig[k]===+k+1).length,
+   pesos:this.pesos.slice(),miMax:this.pesos.indexOf(mx),acierto:this.pesos[CASO_CICLO.clave]===mx};
+  EST.ciclo='hecho';paso(3);
+ }};
+
+VISTAS.ciclo=()=>{
+ const done=EST.ciclo==='hecho';
+ if(done&&P<3)P=3;
+ if(P===0){marcar('ciclo','curso');return `
+  <h1>Ciclo de consulta</h1>
+  <p class="entrada">Consultar una IA no es un acto, es un proceso de siete pasos. Casi todos los errores que después se le atribuyen a la IA ocurrieron en un paso que alguien se saltó sin darse cuenta.</p>
+  <div class="aviso enseña"><span class="t">Dos partes</span>Primero le asignas a cada paso la posición que crees que le corresponde. Después repartes atención en un caso real y ves qué paso subestimas.</div>
+  <button class="btn ancho" onclick="paso(1)">Empezar</button>`}
+
+ if(P===1){
+  const completo=Object.keys(M4.asig).length===7;
+  const col=[1,2,3,4,5,6,7].map(pos=>{
+   const k=Object.keys(M4.asig).find(k=>M4.asig[k]===pos);
+   const bien=M4.verif&&k!==undefined&&+k===pos-1;
+   const mal=M4.verif&&k!==undefined&&+k!==pos-1;
+   return `<div class="guia-it ${bien?'ok':''}" style="${mal?'border-color:var(--alerta)':''}">
+     <span class="n" ${bien?'':''}>${pos}</span>
+     <span style="${k===undefined?'color:var(--tinta-suave)':''}">${k===undefined?'—':PASOS[k].n}</span></div>`}).join('');
+  return `<div class="etiqueta-paso">Parte 1 · El orden</div>
+   <h2 class="mt0">Asigna a cada paso su posición en el ciclo.</h2>
+   <p class="nota">Lee cada uno y elige su número. Si repites un número, el anterior se libera.</p>
+   <div style="display:grid;gap:18px;grid-template-columns:1fr">
+    <div>${PASOS.map((p,i)=>{
+     const pos=M4.asig[i],bien=M4.verif&&pos===i+1;
+     return `<div class="tarjeta ancha" style="margin:0 0 10px;${M4.verif?(bien?'border-color:var(--ok)':'border-color:var(--alerta)'):''}">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+       <div style="flex:1"><h3 class="mt0" style="margin-bottom:4px">${p.n}</h3><p class="nota" style="margin:0">${p.d}</p></div>
+       <select onchange="M4.poner(${i},this.value)" ${M4.verif?'disabled':''} aria-label="Posición de ${p.n}">
+        <option value="">—</option>${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${pos===n?'selected':''}>${n}</option>`).join('')}</select>
+      </div>${M4.verif&&!bien?`<p class="nota" style="margin:9px 0 0;color:var(--alerta)">Va en la posición ${i+1}.</p>`:''}</div>`}).join('')}</div>
+    <div><h3 class="mt0">Tu ciclo</h3><div class="plano-guia" style="margin-top:8px">${col}</div></div>
+   </div>
+   ${M4.verif?`<div class="retro ${Object.keys(M4.asig).filter(k=>M4.asig[k]===+k+1).length===7?'bien':'neutro'}">
+    <div class="cab">Acertaste ${Object.keys(M4.asig).filter(k=>M4.asig[k]===+k+1).length} de 7 posiciones</div>
+    <p>La lógica del ciclo: no puedes elegir herramienta sin saber qué necesitas, no puedes reelaborar sin haber analizado, y no puedes personalizar algo que todavía no confirmaste que sea cierto.</p>
+    <p>No hace falta que lo repitas hasta acertar. Lo importante es que ahora sepas dónde estaba cada paso y por qué.</p></div>
+    <button class="btn ancho" onclick="paso(2)">Continuar</button>`
+   :`<button class="btn ancho" ${completo?'':'disabled'} onclick="M4.verificar()">${completo?'Verificar orden':`Faltan ${7-Object.keys(M4.asig).length} pasos por asignar`}</button>`}`}
+
+ if(P===2){
+  M4.initPesos();const u=M4.pesos.reduce((a,b)=>a+b,0);
+  return `<div class="etiqueta-paso">Parte 2 · Un caso real</div>
+   <h2 class="mt0">${CASO_CICLO.tit}</h2>
+   <div class="tarjeta plana"><p style="margin:0;font-size:16.5px;line-height:1.55">${CASO_CICLO.txt}</p></div>
+   <h3>Reparte 15 puntos de atención</h3>
+   <p class="nota">Si pudieras volver atrás y acompañar a Marcela, ¿dónde pondrías la atención? Más puntos donde creas que estuvo el problema.</p>
+   <div class="tarjeta">${PASOS.map((p,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--linea)">
+    <span style="flex:1;font-size:15.5px;font-weight:600">${p.n}</span>
+    <span style="display:flex;align-items:center;gap:2px">
+     <button class="btn sec chico" style="width:34px;padding:0;height:34px" ${M4.pesos[i]<=0?'disabled':''} onclick="M4.ajustar(${i},-1)">−</button>
+     <span style="width:32px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums">${M4.pesos[i]}</span>
+     <button class="btn sec chico" style="width:34px;padding:0;height:34px" ${u>=15?'disabled':''} onclick="M4.ajustar(${i},1)">+</button>
+    </span></div>`).join('')}</div>
+   <p class="nota">Puntos sin repartir: <b style="color:var(--tinta);font-size:17px">${15-u}</b></p>
+   <button class="btn ancho" ${u===15?'':'disabled'} onclick="M4.confirmar()">${u===15?'Confirmar reparto':`Faltan ${15-u} puntos`}</button>`}
+
+ const d=S.ciclo;
+ return `${barraHecho('ciclo','Tu orden y tu reparto quedaron registrados.')}
+  <h1>Tu perfil de proceso</h1>
+  <div class="tarjeta"><h3 class="mt0">El orden</h3>
+   <p style="margin:0">Acertaste <b>${d.aciertosOrden} de 7</b> posiciones del ciclo.</p></div>
+  <h2>El eslabón roto era ${PASOS[CASO_CICLO.clave].n}</h2>
+  <div class="retro ${d.acierto?'bien':'neutro'}"><div class="cab">${d.acierto?'✓ Pusiste el peso donde estaba':`Tú pusiste el peso en ${PASOS[d.miMax].n}`}</div>
+   <p>${CASO_CICLO.lecturas[d.miMax]}</p><p>${CASO_CICLO.por}</p></div>
+  <h3>Tu reparto contra el ideal del caso</h3>
+  ${barrasComparadas(PASOS.map(p=>p.n),d.pesos,CASO_CICLO.ideal)}
+  <p class="nota">La marca vertical señala dónde habría estado la atención ideal.</p>
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
+};
+
+/* ===================================================================
+   5 · RUEDA DE HÁBITOS
+   =================================================================== */
+const M6={activo:null,dudas:['','',''],
+ reset(){this.activo=null;this.dudas=['','','']},
+ abrir(id){this.activo=id;paso(1)},
+ responder(id,i){
+  if(S.habitos[id]!==undefined)return;
+  const h=HABITOS.find(x=>x.id===id);
+  S.habitos[id]=i;anotaEje(h.eje,i===h.ok?1:0,'Hábito · '+h.nom);
+  if(Object.keys(S.habitos).length===HABITOS.length)EST.habitos='hecho';else marcar('habitos','curso');
+  repintar()},
+ guardarDudas(){
+  const h=HABITOS.find(x=>x.id==='resumen');
+  S.habitos.resumen=M6.dudas.slice();anotaEje(h.eje,1,'Hábito · dudas propias');
+  if(Object.keys(S.habitos).length===HABITOS.length)EST.habitos='hecho';else marcar('habitos','curso');
+  repintar()}};
+
+VISTAS.habitos=()=>{
+ if(P===0){marcar('habitos','curso');
+  const done=EST.habitos==='hecho';
+  return `${done?barraHecho('habitos','Completaste los cuatro hábitos. Puedes volver a leer cualquiera.'):''}
+  <h1>Rueda de hábitos</h1>
+  <p class="entrada">Un hábito de lectura con IA es una regla que aplicas siempre, sin decidirla cada vez. Estos cuatro no son consejos generales: cada uno cierra una vía concreta por la que se cuela un error, y los cuatro se practican sobre el mismo artículo sobre economía de datos.</p>
+  <div class="aviso enseña"><span class="t">Por qué son cuatro y no una lista larga</span>Cubren los cuatro momentos donde falla una lectura asistida: cuando la IA afirma algo, cuando entra antes que tú, cuando rellena huecos y cuando dos herramientas se contradicen. Puedes hacerlos en cualquier orden.</div>
+  <div class="lista-modulos">${HABITOS.map(h=>{const hecho=S.habitos[h.id]!==undefined;
+   return `<button class="mod" onclick="M6.abrir('${h.id}')"><span class="mod-ic" style="background:${hecho?'var(--ok)':'var(--actitud)'}">${hecho?'✓':h.nom[0]}</span>
+    <span class="mod-txt"><span class="mod-nom">${h.nom}</span><span class="mod-sub">${h.lema}</span></span></button>`}).join('')}</div>
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button>${Object.keys(S.habitos).length?`<button class="btn" onclick="ir('diag')">Mi diagnóstico</button>`:''}</div>`}
+
+ const h=HABITOS.find(x=>x.id===M6.activo),hecho=S.habitos[h.id]!==undefined;
+ const cab=`<div class="etiqueta-paso">Hábito · ${h.lema}</div><h2 class="mt0">${h.nom}</h2>
+  <div class="tarjeta"><h3 class="mt0">En qué consiste</h3><p style="margin:0 0 12px">${h.que}</p>
+   <h3>Por qué importa</h3><p style="margin:0">${h.porque}</p></div>`;
+
+ if(h.tipo==='escritura')return cab+`
+  <h3>${h.preg}</h3>
+  <div class="tarjeta plana"><div class="lectura"><div class="tit" style="font-size:19px">${h.titulo}</div>
+   ${h.sub.map(s=>`<p class="nota" style="margin:3px 0;font-family:var(--ui)">— ${s}</p>`).join('')}</div></div>
+  ${hecho?`<div class="tarjeta">${S.habitos.resumen.map((d,i)=>`<p style="margin:6px 0"><b>${i+1}.</b> ${esc(d)||'—'}</p>`).join('')}</div>
+   <div class="retro bien"><div class="cab">✓ Listo</div><p>${h.retro}</p><div class="costo">${h.costo}</div></div>`
+  :`${[0,1,2].map(i=>`<input type="text" placeholder="Duda ${i+1}" value="${esc(M6.dudas[i])}" oninput="M6.dudas[${i}]=this.value" style="margin-bottom:9px">`).join('')}
+   <button class="btn ancho" onclick="M6.guardarDudas()">Guardar mis dudas</button>`}
+  <div class="acciones"><button class="btn sec" onclick="paso(0)">Volver a la rueda</button></div>`;
+
+ return cab+`<h3>${h.preg}</h3>
+  <div class="ops">${h.ops.map((o,i)=>{const cls=!hecho?'':(i===h.ok?'bien':(i===S.habitos[h.id]?'mal':'apagada'));
+   return `<button class="op ${cls}" ${hecho?'disabled':''} onclick="M6.responder('${h.id}',${i})"><span class="letra">${String.fromCharCode(65+i)}</span><span>${o}</span></button>`}).join('')}</div>
+  ${hecho?`<div class="retro ${S.habitos[h.id]===h.ok?'bien':'mal'}"><div class="cab">${S.habitos[h.id]===h.ok?'✓ Correcto':'La otra era'}</div><p>${h.retro}</p><div class="costo">${h.costo}</div></div>`:''}
+  <div class="acciones"><button class="btn sec" onclick="paso(0)">Volver a la rueda</button></div>`;
+};
+
+/* ===================================================================
+   6 · AUTORÍA EN PRÁCTICA
+   =================================================================== */
+const M7={resp:[],
+ reset(){this.resp=[]},
+ elegir(i){this.resp[P]=i;anotaEje(3,i===AUTORIA[P].ok?1:0,'Autoría · caso '+(P+1));repintar()},
+ seguir(){if(P<AUTORIA.length-1)paso(P+1);
+  else{S.autoria={aciertos:this.resp.filter((r,i)=>r===AUTORIA[i].ok).length};EST.autoria='hecho';paso(AUTORIA.length)}}};
+
+VISTAS.autoria=()=>{
+ const done=EST.autoria==='hecho';
+ if(done&&P<AUTORIA.length)P=AUTORIA.length;
+ if(P<AUTORIA.length){
+  if(P===0)marcar('autoria','curso');
+  const c=AUTORIA[P],r=M7.resp[P];
+  return `<div class="pasos">${AUTORIA.map((_,i)=>`<i class="${i<=P?'on':''}"></i>`).join('')}</div>
+   <div class="etiqueta-paso">Caso ${P+1} de 7</div>
+   <h2 class="mt0">${c.ctx}</h2>
+   <p class="nota">¿Cuál de las dos respuestas es transparencia real?</p>
+   <div class="ops">${c.ops.map((o,i)=>{const cls=r===undefined?'':(i===c.ok?'bien':(i===r?'mal':'apagada'));
+    return `<button class="op ${cls}" ${r!==undefined?'disabled':''} onclick="M7.elegir(${i})"><span class="letra">${String.fromCharCode(65+i)}</span><span>${o}</span></button>`}).join('')}</div>
+   ${r!==undefined?`<div class="retro ${r===c.ok?'bien':'mal'}"><div class="cab">${r===c.ok?'✓ Sí':'No era esa'}</div><p>${c.por}</p></div>
+    <button class="btn ancho" onclick="M7.seguir()" style="margin-top:13px">${P<AUTORIA.length-1?'Siguiente caso':'Ver el decálogo'}</button>`:''}`}
+
+ const a=S.autoria.aciertos;
+ return `${barraHecho('autoria','Tus siete respuestas quedaron registradas.')}
+  <h1>${a} de 7</h1>
+  <p class="entrada">${a>=6?'Distingues declarar de aparentar que declaras, incluso en los casos donde lo correcto era no declarar.':a>=4?'Tienes el principio. Lo que falla son los casos donde la transparencia consiste en no inflar la declaración, o en no llevarla al lugar equivocado.':'Los siete casos apuntaban a lo mismo: una declaración sirve cuando permite a quien lee juzgar algo. Si no, es decoración o es trámite.'}</p>
+  <h2>Decálogo de transparencia</h2>
+  <p class="nota">Aplicable a lo empresarial, lo profesional y lo académico.</p>
+  ${DECALOGO.map((d,i)=>`<div class="tarjeta" style="margin:9px 0"><h3 class="mt0">${i+1}. ${d.n}</h3><p style="margin:0">${d.d}</p></div>`).join('')}
+  <div class="acciones"><button class="btn sec" onclick="copiarDecalogo(this)">Copiar decálogo</button>
+   <button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>
+  <button class="btn sec ancho" onclick="ir('inicio')">Volver al menú</button>`;
+};
+function copiarDecalogo(b){copiar(DECALOGO.map((d,i)=>(i+1)+'. '+d.n+' — '+d.d).join('\n'),b)}
+
+/* ===================================================================
+   7 · PATRONES DE TEXTO CON IA
+   =================================================================== */
+const M8={
+ pend:null,txtPend:null,marcas:{0:[],1:[],2:[]},veredicto:{},
+ reset(){this.pend=null;this.txtPend=null;this.marcas={0:[],1:[],2:[]};this.veredicto={}},
+ tocar(ti,wi){
+  if(this.veredicto[ti]!==undefined)return;
+  const ya=this.marcas[ti].findIndex(m=>wi>=m.ini&&wi<=m.fin);
+  if(ya>=0){this.marcas[ti].splice(ya,1);this.pend=null;this.txtPend=null;repintar();return}
+  if(this.txtPend!==ti||!this.pend){this.txtPend=ti;this.pend={ini:wi,fin:wi}}
+  else if(wi===this.pend.fin+1)this.pend.fin=wi;
+  else if(wi===this.pend.ini-1)this.pend.ini=wi;
+  else this.pend={ini:wi,fin:wi};
+  repintar()},
+ etiquetar(tipo){
+  this.marcas[this.txtPend].push({ini:this.pend.ini,fin:this.pend.fin,tipo});
+  this.pend=null;this.txtPend=null;repintar()},
+ cancelar(){this.pend=null;this.txtPend=null;repintar()},
+ votar(ti,ia){
+  this.veredicto[ti]=ia;this.pend=null;this.txtPend=null;
+  if(Object.keys(this.veredicto).length===3){
+   S.patrones={aciertos:TEXTOS_IA.filter((t,i)=>this.veredicto[i]===t.ia).length,
+    marcas:Object.values(this.marcas).reduce((s,a)=>s+a.length,0)};
+   EST.patrones='hecho';
+  } else marcar('patrones','curso');
+  repintar()}};
+
+VISTAS.patrones=()=>{
+ const done=EST.patrones==='hecho';
+ if(done&&P===0)P=2;
+ if(P===0){marcar('patrones','curso');return `
+  <h1>Patrones de texto con IA</h1>
+  <p class="entrada">Este ejercicio no diagnostica cómo lees: entrena el ojo. Vas a marcar rastros de IA en tres textos y decidir quién escribió cada uno.</p>
+  <div class="tarjeta"><h3 class="mt0">Las cinco etiquetas</h3>
+   ${ETIQUETAS.map(e=>`<div style="padding:9px 0;border-bottom:1px solid var(--linea)"><b>${e.n}</b><span class="nota" style="display:block">${e.d}</span></div>`).join('')}</div>
+  <div class="aviso ojo"><span class="t">Antes de empezar</span>Ninguna marca suelta prueba nada, y los detectores automáticos tampoco son fiables. Uno de los tres textos está ahí para demostrártelo.</div>
+  <button class="btn ancho" onclick="paso(1)">Empezar</button>`}
+
+ if(P===1){
+  const listo=Object.keys(M8.veredicto).length===3;
+  return `<div class="etiqueta-paso">Marca los rastros de IA</div>
+   <h2 class="mt0">Toca una palabra, o varias seguidas, y elige qué tipo de rastro es.</h2>
+   <p class="nota">Toca una marca ya hecha para quitarla. Cuando termines con un texto, decide quién lo escribió.</p>
+   ${TEXTOS_IA.map((t,ti)=>{
+    const v=M8.veredicto[ti],ws=t.cuerpo.split(' ');
+    let html='',i=0;
+    while(i<ws.length){
+     const m=M8.marcas[ti].find(m=>m.ini===i);
+     const esPend=M8.txtPend===ti&&M8.pend&&M8.pend.ini===i;
+     if(m){
+      const et=ETIQUETAS.find(e=>e.id===m.tipo);
+      html+=`<span class="marca" onclick="M8.tocar(${ti},${i})">${ws.slice(m.ini,m.fin+1).join(' ')}<sup class="etq">${et.n}</sup></span> `;
+      i=m.fin+1;
+     } else if(esPend){
+      html+=`<span class="pend">${ws.slice(M8.pend.ini,M8.pend.fin+1).map((w,k)=>`<span class="pal" onclick="M8.tocar(${ti},${M8.pend.ini+k})">${w}</span>`).join(' ')}</span> `;
+      i=M8.pend.fin+1;
+     } else { html+=`<span class="pal" onclick="M8.tocar(${ti},${i})">${ws[i]}</span> `;i++; }
+    }
+    return `<div class="tarjeta ancha"><h3 class="mt0">${t.tit}</h3>
+     <div class="texto-marcable">${html}</div>
+     ${M8.txtPend===ti&&M8.pend?`<div class="menu-etq"><span class="nota" style="display:block;margin-bottom:8px">¿Qué tipo de rastro es? Toca una palabra contigua para extender la selección.</span>
+       <div class="fila">${ETIQUETAS.map(e=>`<button class="btn sec chico" onclick="M8.etiquetar('${e.id}')">${e.n}</button>`).join('')}
+       <button class="btn chico" style="background:transparent;color:var(--tinta-suave)" onclick="M8.cancelar()">Cancelar</button></div></div>`:''}
+     ${v===undefined?`<div class="acciones" style="max-width:none"><button class="btn sec" onclick="M8.votar(${ti},true)">Lo escribió una IA</button><button class="btn sec" onclick="M8.votar(${ti},false)">Lo escribió una persona</button></div>`
+      :`<div class="retro ${v===t.ia?'bien':'mal'}" style="max-width:none"><div class="cab">${v===t.ia?'✓ Acertaste':'No era'}</div><p>${t.rev}</p></div>`}
+    </div>`}).join('')}
+   ${listo?`<button class="btn ancho" onclick="paso(2)">Ver mi resultado</button>`:''}`}
+
+ const a=S.patrones.aciertos;
+ return `${barraHecho('patrones','Tus marcas y veredictos quedaron registrados.')}
+  <h1>${a} de 3</h1>
+  <p class="entrada">${a===3?'Los tres, incluido el tercero, que es la trampa: humano, publicado y firmado, con todas las marcas que aprendiste a buscar.':'El tercer texto separa a quien lee patrones de quien busca marcas sueltas. Es humano: lo escribió la directora general de una empresa de datos, y es el mismo artículo que aparece en otros componentes.'}</p>
+  <div class="tarjeta"><h3 class="mt0">Marcaste ${S.patrones.marcas} rastro${S.patrones.marcas===1?'':'s'}</h3>
+   <p style="margin:0">Lo que vale de este ejercicio no es cuántos marcaste, sino haber visto que las mismas marcas aparecen en prosa humana. Las IA aprendieron a escribir leyendo prosa corporativa: por eso suenan igual.</p></div>
+  <div class="aviso"><span class="t">Lo que hay que llevarse</span>Marcar rastros no es lo mismo que probar autoría. Un texto es sospechoso cuando acumula varias etiquetas a la vez y, sobre todo, cuando no hay nadie adentro: ni un yo, ni una anécdota, ni un dato que se pueda verificar.</div>
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
+};
+
+/* ===================================================================
+   8 · HABILIDAD LECTORA
+   =================================================================== */
+const M9={resp:{},orden:null,esc:50,
+ reset(){this.resp={};this.orden=null;this.esc=50},
+ initOrden(){if(!this.orden)this.orden=[1,2,0]},
+ mover(i,d){const a=this.orden,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];repintar()},
+ registrar(bien){const q=LECTORA_Q[P];S.lectora[q.eje].push(bien?1:0);this.resp[P]=bien;repintar()},
+ seguir(){if(P<LECTORA_Q.length-1){this.esc=50;paso(P+1)}else{EST.lectora='hecho';paso(LECTORA_Q.length)}}};
+
+VISTAS.lectora=()=>{
+ const done=EST.lectora==='hecho';
+ if(done&&P<LECTORA_Q.length)P=LECTORA_Q.length;
+ if(!T.leido&&P===0&&M9.resp[0]===undefined){marcar('lectora','curso');return `
+  <h1>Habilidad lectora</h1>
+  <p class="entrada">Diez preguntas sobre un mismo texto, repartidas en cuatro niveles: literal, inferencial, crítica y contraargumentativa. No todas son de opción múltiple.</p>
+  ${lectura(T3)}
+  <div class="aviso enseña"><span class="t">Puedes volver al texto</span>No es una prueba de memoria. Vas a tenerlo disponible en cada pregunta.</div>
+  <button class="btn ancho" onclick="T.leido=true;repintar()">Empezar las preguntas</button>`}
+
+ if(P<LECTORA_Q.length){
+  const q=LECTORA_Q[P],r=M9.resp[P]!==undefined;
+  const nom={literal:'Literal',inferencial:'Inferencial',critica:'Crítica',contra:'Contraargumentativa'}[q.eje];
+  const cab=`<div class="pasos">${LECTORA_Q.map((_,i)=>`<i class="${i<=P?'on':''}"></i>`).join('')}</div>
+   <div class="etiqueta-paso">Pregunta ${P+1} de 10 · ${nom}</div><h2 class="mt0">${q.t}</h2>`;
+  const pie=r?`<div class="retro ${M9.resp[P]?'bien':'neutro'}"><div class="cab">${M9.resp[P]?'✓ Correcto':'Mira esto'}</div><p>${q.por}</p></div>
+   <button class="btn ancho" onclick="M9.seguir()" style="margin-top:13px">${P<9?'Siguiente':'Ver mi radar'}</button>`:'';
+
+  if(q.tipo==='multi')return cab+`<div class="ops">${q.ops.map((o,i)=>{const cls=!r?'':(i===q.ok?'bien':'apagada');
+   return `<button class="op ${cls}" ${r?'disabled':''} onclick="M9.registrar(${i}===${q.ok})"><span class="letra">${String.fromCharCode(65+i)}</span><span>${o}</span></button>`}).join('')}</div>`+releer(T3)+pie;
+
+  if(q.tipo==='ordenar'){M9.initOrden();
+   return cab+`<div class="plano-guia">${M9.orden.map((idx,i)=>`<div class="guia-it ${r&&idx===i?'ok':''}" style="${r&&idx!==i?'border-color:var(--alerta)':''}">
+     <span class="n">${i+1}</span><span style="flex:1">${q.items[idx]}</span>
+     <span style="display:flex;flex-direction:column;gap:2px">
+      <button class="btn sec chico" style="padding:0;width:30px;height:21px;font-size:9px" ${i===0||r?'disabled':''} onclick="M9.mover(${i},-1)">▲</button>
+      <button class="btn sec chico" style="padding:0;width:30px;height:21px;font-size:9px" ${i===2||r?'disabled':''} onclick="M9.mover(${i},1)">▼</button></span></div>`).join('')}</div>
+    ${r?'':`<button class="btn ancho" onclick="M9.registrar(M9.orden.every((v,i)=>v===i))">Confirmar orden</button>`}`+releer(T3)+pie;}
+
+  if(q.tipo==='marcar')return cab+`<div class="tarjeta"><div class="lectura" style="font-size:16.5px">
+    ${T3.cuerpo.map((p,i)=>`<span class="parr-sel ${r&&i===q.ok?'sel':''}" onclick="${r?'':`M9.registrar(${i}===${q.ok})`}">${p}</span>`).join('')}</div></div>`+pie;
+
+  if(q.tipo==='escala')return cab+`<div class="escala">
+    <input type="range" min="0" max="100" value="${M9.esc}" ${r?'disabled':''} oninput="M9.esc=+this.value">
+    <div class="polos"><span>${q.a}</span><span>${q.b}</span></div></div>
+   ${r?'':`<button class="btn ancho" onclick="M9.registrar(Math.abs(M9.esc-${q.ideal})<=22)">Confirmar</button>`}`+releer(T3)+pie;
+ }
+
+ const ejes=['literal','inferencial','critica','contra'],noms=['Literal','Inferencial','Crítica','Contraarg.'];
+ const largos=['literal','inferencial','crítica','contraargumentativa'];
+ const vals=ejes.map(e=>{const a=S.lectora[e];return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0});
+ const min=vals.indexOf(Math.min(...vals)),max=vals.indexOf(Math.max(...vals));
+ return `${barraHecho('lectora','Tus diez respuestas quedaron registradas.')}
+  <h1>Tu radar de lectura</h1>
+  <p class="entrada">Cuatro niveles sobre un mismo texto. Un radar disparejo es lo normal: casi nadie rinde igual en los cuatro.</p>
+  ${radarSVG(noms,vals,'#00937B')}
+  <div class="tarjeta">
+   <p><b>Tu nivel más firme es el ${largos[max]}.</b> ${['Retienes lo que el texto dice literalmente, que es la base de todo lo demás.','Sacas a la luz lo que el texto da por supuesto sin escribirlo.','Ves lo que el texto hace además de lo que afirma: sus intereses, sus omisiones.','Sabes dónde golpear un argumento para probar si aguanta.'][max]}</p>
+   <p style="margin:0"><b>El que más trabajo pide es el ${largos[min]}.</b> Abajo tienes prácticas para cada nivel.</p></div>
+  <h2>Prácticas por nivel</h2>
+  ${ejes.map((e,i)=>`<details ${i===min?'open':''}><summary>${largos[i][0].toUpperCase()+largos[i].slice(1)} · ${vals[i]}</summary>
+   <div class="tarjeta plana">${PRACTICAS_LECTORA[e].map(p=>`<p class="nota" style="margin:5px 0">· ${p}</p>`).join('')}</div></details>`).join('')}
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
+};
+
+/* ===================================================================
+   GRÁFICOS
+   =================================================================== */
+function radarSVG(labels,vals,color){
+ const n=labels.length,W=440,H=376,cx=W/2,cy=H/2+4,R=100;
+ const ang=i=>(-Math.PI/2)+(i*2*Math.PI/n);
+ const pt=(i,r)=>[cx+Math.cos(ang(i))*r,cy+Math.sin(ang(i))*r];
+ let g='';
+ [.25,.5,.75,1].forEach(f=>{g+=`<polygon points="${labels.map((_,i)=>pt(i,R*f).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="#E3E3E9" stroke-width="1"/>`});
+ labels.forEach((_,i)=>{const[x,y]=pt(i,R);g+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#E3E3E9"/>`});
+ g+=`<polygon points="${vals.map((v,i)=>pt(i,R*Math.max(v,3)/100).map(x=>x.toFixed(1)).join(',')).join(' ')}" fill="${color}" fill-opacity=".16" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>`;
+ vals.forEach((v,i)=>{const[x,y]=pt(i,R*Math.max(v,3)/100);g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#fff" stroke="${color}" stroke-width="2.5"/>`});
+ labels.forEach((l,i)=>{const[x,y]=pt(i,R+30);
+  const anc=Math.abs(x-cx)<12?'middle':(x>cx?'start':'end');
+  g+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anc}" font-family="Figtree,sans-serif" font-size="12.5" font-weight="600" fill="#55555C">${l}</text>`;
+  g+=`<text x="${x.toFixed(1)}" y="${(y+14).toFixed(1)}" text-anchor="${anc}" font-family="Figtree,sans-serif" font-size="12" font-weight="700" fill="${color}">${vals[i]}</text>`});
+ return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de radar">${g}</svg>`;
+}
+
+function planoSVG(pts){
+ const W=400,H=380,m=62,S=W-2*m,x0=m,y0=(H-S)/2;
+ const px=p=>x0+S*p.x/100, py=p=>y0+S*(100-p.y)/100;
+ const c=centroide(pts);
+ let g=`<rect x="${x0}" y="${y0}" width="${S}" height="${S}" rx="14" fill="#fff" stroke="#E3E3E9" stroke-width="1.5"/>`;
+ g+=`<line x1="${x0}" y1="${y0+S/2}" x2="${x0+S}" y2="${y0+S/2}" stroke="#E3E3E9"/>`;
+ g+=`<line x1="${x0+S/2}" y1="${y0}" x2="${x0+S/2}" y2="${y0+S}" stroke="#E3E3E9"/>`;
+ if(pts.length>=3){
+  const orden=pts.slice().sort((a,b)=>Math.atan2(a.y-c.y,a.x-c.x)-Math.atan2(b.y-c.y,b.x-c.x));
+  g+=`<polygon points="${orden.map(p=>px(p).toFixed(1)+','+py(p).toFixed(1)).join(' ')}" fill="#E0326B" fill-opacity=".13" stroke="#E0326B" stroke-opacity=".45" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+ }
+ pts.forEach((p,i)=>{g+=`<circle cx="${px(p).toFixed(1)}" cy="${py(p).toFixed(1)}" r="8" fill="${T1_PLANO_GUIA[i].c}" stroke="#fff" stroke-width="2.5"/>`});
+ g+=`<circle cx="${px(c).toFixed(1)}" cy="${py(c).toFixed(1)}" r="14" fill="#E0326B" fill-opacity=".2" stroke="#E0326B" stroke-width="2.5"/>`;
+ const t=(s,x,y,anc,rot)=>`<text x="${x}" y="${y}" text-anchor="${anc}" font-family="Figtree,sans-serif" font-size="11.5" font-weight="600" fill="#8A8A93"${rot?` transform="rotate(${rot} ${x} ${y})"`:''}>${s}</text>`;
+ g+=t('Desconfío del texto',W/2,y0-14,'middle');
+ g+=t('Me dejo llevar',W/2,y0+S+24,'middle');
+ g+=t('Leo para sentir',x0-16,y0+S/2,'middle',-90);
+ g+=t('Leo para entender',x0+S+20,y0+S/2,'middle',90);
+ return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Plano de lectura">${g}</svg>
+  <div class="fila" style="gap:14px;margin-top:6px">${T1_PLANO_GUIA.map((gg,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--tinta-media)">
+   <span style="width:10px;height:10px;border-radius:50%;background:${gg.c}"></span>${gg.n}</span>`).join('')}</div>`;
+}
+
+function barrasDiv(d){
+ const items=[
+  {n:'Precisión sobre el texto',a:'Elegiste por sonido',b:'Elegiste por memoria',v:Math.round(d.aciertos/3*100)},
+  {n:'Oído para la ironía',a:'Frase descriptiva',b:'Frase con giro',v:d.ironia?100:0},
+  {n:T1_ESCALAS[0].t,a:T1_ESCALAS[0].a,b:T1_ESCALAS[0].b,v:d.esc[0]},
+  {n:T1_ESCALAS[1].t,a:T1_ESCALAS[1].a,b:T1_ESCALAS[1].b,v:d.esc[1]},
+  {n:T1_ESCALAS[2].t,a:T1_ESCALAS[2].a,b:T1_ESCALAS[2].b,v:d.esc[2]}];
+ const W=440,fila=52,H=items.length*fila+16,cx=W/2;
+ let g='';
+ items.forEach((it,i)=>{
+  const y=i*fila+22,off=(it.v-50)/50;
+  const w=Math.abs(off)*(W/2-14);
+  g+=`<text x="14" y="${y-5}" font-family="Figtree,sans-serif" font-size="11.5" font-weight="600" fill="#55555C">${it.n.length>52?it.n.slice(0,50)+'…':it.n}</text>`;
+  g+=`<rect x="14" y="${y+3}" width="${W-28}" height="12" rx="6" fill="#EDEDF2"/>`;
+  if(w>1)g+=`<rect x="${off>0?cx:cx-w}" y="${y+3}" width="${w.toFixed(1)}" height="12" rx="6" fill="#E0326B"/>`;
+  g+=`<line x1="${cx}" y1="${y}" x2="${cx}" y2="${y+18}" stroke="#8A8A93" stroke-width="1.5"/>`;
+ });
+ return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Inclinaciones">${g}</svg>
+  <p class="nota">Cada barra sale del centro hacia el polo al que te inclinaste. Cuanto más larga, más marcada la inclinación. A la izquierda: ${items[0].a.toLowerCase()} y sus equivalentes; a la derecha, lo contrario.</p>`;
+}
+
+function barrasComparadas(noms,vals,ideal){
+ const max=Math.max(...vals,...ideal,1);
+ return `<div class="barras">${noms.map((n,i)=>`<div class="barra-fila">
+  <div class="lab"><span>${n}</span><span>${vals[i]}</span></div>
+  <div class="barra-pista"><i style="width:${vals[i]/max*100}%;background:var(--proceso)"></i>
+   <span class="ideal" style="left:calc(${ideal[i]/max*100}% - 1px)"></span></div></div>`).join('')}</div>`;
+}
+
+/* ===================================================================
+   LECTURAS
+   =================================================================== */
+function resumenPentagono(){
+ const datos=EJES.map(e=>({e,v:ejeVal(e.id)})).filter(x=>x.v!==null);
+ if(datos.length<3)return{titulo:'Faltan datos',texto:`Tienes ${datos.length} de 5 ejes con información. Con al menos 3 se puede leer una tendencia.`};
+ const vals=datos.map(d=>d.v);
+ if(Math.max(...vals)-Math.min(...vals)<20&&Math.max(...vals)<=65&&Math.min(...vals)>=35)
+  return{titulo:'Perfil equilibrado',texto:'Ningún eje se despega de los demás. No es indecisión: es que todavía no aparece una tendencia marcada. Completa más ejercicios y el pentágono se va a deformar.'};
+ const mx=Math.max(...vals),mn=Math.min(...vals);
+ const fuertes=datos.filter(d=>d.v===mx),debil=datos.find(d=>d.v===mn);
+ return{titulo:'Perfil dominante: '+fuertes.map(f=>mx>=50?f.e.b:f.e.a).join(' y '),
+  texto:`Tu eje más marcado es ${fuertes.map(f=>f.e.nom.toLowerCase()).join(' y ')}. El que más trabajo pide es <b>${debil.e.nom.toLowerCase()}</b>.`,
+  debil:debil.e,fuertes:fuertes.map(f=>f.e)};
+}
+
+/* ===================================================================
+   DIAGNÓSTICO
+   =================================================================== */
+VISTAS.diag=()=>{
+ const hay=Object.keys(S.actitud).length||S.sensibilidad||S.ciclo||S.patrones||S.autoria||
+  ['literal','inferencial','critica','contra'].some(e=>S.lectora[e].length);
+ if(!hay)return `<h1>Mi diagnóstico</h1>
+  <div class="vacio" style="margin-top:18px">Todavía no hay nada que mostrar.<br>Haz cualquier ejercicio y este panel se empieza a llenar.</div>
+  <button class="btn ancho" onclick="ir('inicio')" style="margin-top:16px">Ir a los ejercicios</button>`;
+
+ const res=resumenPentagono();
+ const vals=EJES.map(e=>ejeVal(e.id));
+ const conDatos=vals.filter(v=>v!==null).length;
+ const ejL=['literal','inferencial','critica','contra'];
+ const valsL=ejL.map(e=>{const a=S.lectora[e];return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0});
+ const hayL=ejL.some(e=>S.lectora[e].length);
+
+ return `<h1>Mi diagnóstico</h1>
+ <p class="entrada">${hechos()} de 8 componentes completados. Todo se actualiza solo, en el orden que hayas ido eligiendo.</p>
+
+ <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--actitud)"></span><h3>Actitud frente a la IA</h3></div>
+ ${!conDatos?`<div class="vacio">Sin datos todavía. Empieza por «Tu actitud frente a la IA».</div>`:`
+  ${radarSVG(EJES.map(e=>e.corto),vals.map(v=>v??0),'#5A55E0')}
+  <div class="tarjeta"><h3 class="mt0" style="font-size:21px">${res.titulo}</h3>
+   <p class="nota" style="margin-bottom:12px">${res.texto}</p>
+   ${EJES.map(e=>{const v=ejeVal(e.id),h=S.actitud[e.id]||[];
+    if(v===null)return `<div class="trayecto"><b>${e.nom}</b> — sin datos todavía</div>`;
+    const decl=h.filter(x=>x.fuente==='Actitud inicial'),evi=h.filter(x=>x.fuente!=='Actitud inicial');
+    let tr;
+    if(evi.length){
+     const d0=decl.length?Math.round(decl.reduce((s,x)=>s+x.polo,0)/decl.length*100):null;
+     const d1=Math.round(evi.reduce((s,x)=>s+x.polo,0)/evi.length*100);
+     tr = d0===null?` Lo demostraste en ${evi.length} ejercicio${evi.length>1?'s':''}, no solo lo dijiste.`
+      : d1>d0+15?` Dijiste estar más cerca de ${e.a.toLowerCase()}, pero al hacerlo te moviste hacia ${e.b.toLowerCase()}.`
+      : d1<d0-15?` Te declaraste ${e.b.toLowerCase()}, pero en la práctica apareció el ${e.a.toLowerCase()}. Es el hueco más común entre lo que creemos y lo que hacemos.`
+      : ` Lo que declaraste y lo que hiciste coinciden.`;
+    } else tr=' Todavía es solo lo que declaraste: ningún ejercicio lo puso a prueba.';
+    return `<div class="trayecto"><b>${e.nom}: ${v>=50?e.b:e.a}</b> (${v})${tr}</div>`}).join('')}</div>`}
+ </div>
+
+ <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--lectora)"></span><h3>Habilidad lectora</h3></div>
+ ${!hayL?`<div class="vacio">Sin datos todavía.</div>`:radarSVG(['Literal','Inferencial','Crítica','Contraarg.'],valsL,'#00937B')}</div>
+
+ <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--sensibilidad)"></span><h3>Temperatura lectora</h3></div>
+ ${!S.sensibilidad?`<div class="vacio">Sin datos todavía.</div>`:`${planoSVG(S.sensibilidad.pts)}
+  <div class="tarjeta">${prosaSensible(S.sensibilidad)}</div>`}</div>
+
+ <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--proceso)"></span><h3>Rigor del proceso</h3></div>
+ ${!S.ciclo?`<div class="vacio">Sin datos todavía.</div>`:`<div class="tarjeta ancha">
+  <p class="nota mt0">Acertaste ${S.ciclo.aciertosOrden} de 7 posiciones del ciclo. ${S.ciclo.acierto?'En el caso del comité pusiste el peso en Confirmación, que era donde se rompía la cadena.':'En el caso del comité pusiste el peso en '+PASOS[S.ciclo.miMax].n+', y el eslabón roto era Confirmación.'}</p>
+  ${barrasComparadas(PASOS.map(p=>p.n),S.ciclo.pesos,CASO_CICLO.ideal)}</div>`}</div>
+
+ ${S.autoria?`<div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--actitud)"></span><h3>Autoría</h3></div>
+  <div class="tarjeta"><p style="margin:0"><b>${S.autoria.aciertos} de 7 casos de transparencia.</b></p></div></div>`:''}
+
+ ${S.patrones?`<div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--patrones)"></span><h3>Ojo para textos con IA</h3></div>
+  <div class="tarjeta"><p style="margin:0"><b>${S.patrones.aciertos} de 3 veredictos correctos</b>, con ${S.patrones.marcas} rastros marcados. <span class="nota">Este dato va aparte: entrena el ojo, no describe cómo lees.</span></p></div></div>`:''}
+
+ <div class="acciones">
+  <button class="btn sec" onclick="ir('inicio')">Volver al menú</button>
+  <button class="btn ${hechos()===8?'':'sec'}" ${hechos()===8?'':'disabled'} onclick="ir('recos')">
+   ${hechos()===8?'Prácticas y recomendaciones':`Prácticas (faltan ${8-hechos()})`}</button>
+ </div>
+ <button class="btn sec ancho" onclick="descargar()">Descargar informe</button>
+ <p class="nota" style="margin-top:10px">El informe es un archivo de texto. Si cierras la pestaña sin descargarlo, se pierde todo.</p>`;
+};
+
+/* ===================================================================
+   PRÁCTICAS Y RECOMENDACIONES
+   =================================================================== */
+VISTAS.recos=()=>{
+ const res=resumenPentagono();
+ const orden=EJES.map(e=>({e,v:ejeVal(e.id)})).filter(x=>x.v!==null).sort((a,b)=>a.v-b.v);
+ const ejL=['literal','inferencial','critica','contra'],largos=['literal','inferencial','crítica','contraargumentativa'];
+ const valsL=ejL.map(e=>{const a=S.lectora[e];return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0});
+ const minL=valsL.indexOf(Math.min(...valsL));
+ const d=S.sensibilidad,c=centroide(d.pts),disp=dispersion(d.pts);
+ return `<h1>Prácticas y recomendaciones</h1>
+ <p class="entrada">Completaste los ocho componentes. Esto reúne todo lo accionable, ordenado de lo más urgente a lo que ya tienes resuelto.</p>
+
+ <h2>Empieza por aquí</h2>
+ <div class="tarjeta"><h3 class="mt0">${orden[0].e.nom} es tu eje más flojo (${orden[0].v})</h3>
+  ${orden[0].e.fortalece.map(r=>`<p style="margin:6px 0">· ${r}</p>`).join('')}
+  <p class="nota" style="margin-top:10px">${orden[0].e.alto}</p></div>
+ <div class="tarjeta"><h3 class="mt0">Tu nivel de lectura ${largos[minL]} es el que más trabajo pide (${valsL[minL]})</h3>
+  ${PRACTICAS_LECTORA[ejL[minL]].map(p=>`<p style="margin:6px 0">· ${p}</p>`).join('')}</div>
+
+ <h2>Del ciclo de consulta</h2>
+ <div class="tarjeta"><p class="mt0" style="margin:0 0 10px">${S.ciclo.acierto?'Identificaste bien que el problema de Marcela era de confirmación.':'En el caso del comité pusiste el peso en '+PASOS[S.ciclo.miMax].n+'. El eslabón roto era Confirmación.'}</p>
+  <p style="margin:6px 0">· Antes de llevar cualquier cifra a una reunión, escribe al lado de dónde salió: quién la midió, de qué año y de qué mercado.</p>
+  <p style="margin:6px 0">· Pídele a la IA la cita textual y la página, no el dato suelto.</p>
+  <p style="margin:6px 0">· Si no puedes contestar «¿de dónde sale esto?», todavía no está listo para presentarse.</p></div>
+
+ <h2>De la rueda de hábitos</h2>
+ <div class="tarjeta">${HABITOS.map(h=>`<p style="margin:8px 0"><b>${h.nom}.</b> ${h.lema}.</p>`).join('')}
+  <p class="nota" style="margin-top:10px">Elige uno solo y aplícalo durante una semana. Cuatro hábitos nuevos a la vez no se sostienen; uno sí.</p></div>
+
+ <h2>De autoría</h2>
+ <div class="tarjeta"><p class="mt0" style="margin:0 0 10px">Acertaste ${S.autoria.aciertos} de 7 casos.</p>
+  ${DECALOGO.slice(0,4).map((x,i)=>`<p style="margin:6px 0">· <b>${x.n}.</b> ${x.d}</p>`).join('')}
+  <p class="nota" style="margin-top:10px">El decálogo completo está en el componente de autoría.</p></div>
+
+ <h2>De tu temperatura lectora</h2>
+ <div class="tarjeta"><p class="mt0" style="margin:0 0 10px">${disp<=12?'Lees de manera muy estable en las tres situaciones que marcaste.':disp>=28?'Cambias mucho de modo de lectura según el contexto.':'Ajustas moderadamente tu lectura según el contexto.'}</p>
+  ${c.x<50?'<p style="margin:6px 0">· Tu lectura es más sensorial que analítica. Practica extraer la tesis de un texto en una sola frase antes de opinar sobre él.</p>':'<p style="margin:6px 0">· Tu lectura es más analítica que sensorial. Practica leer en voz alta: el ritmo y el sonido cargan sentido que la extracción se pierde.</p>'}
+  ${c.y<50?'<p style="margin:6px 0">· Te entregas al texto. Después de leer algo que te convenció, escribe qué recurso usó para convencerte.</p>':'<p style="margin:6px 0">· Lees con la guardia arriba. Prueba una lectura sin sospechar y comprueba qué ves que antes no veías.</p>'}</div>
+
+ <h2>Lo que ya tienes fuerte</h2>
+ <div class="tarjeta">${orden.slice(-2).reverse().map(({e,v})=>`<p style="margin:8px 0"><b>${e.nom} (${v}).</b> ${e.refuerza[0]}</p>`).join('')}</div>
+
+ <div class="acciones"><button class="btn sec" onclick="ir('diag')">Ver el diagnóstico</button><button class="btn" onclick="descargar()">Descargar informe</button></div>
+ <button class="btn sec ancho" onclick="ir('inicio')">Volver al menú</button>`;
+};
+
+/* ===================================================================
+   UTILIDADES
+   =================================================================== */
+function copiar(t,btn){
+ const ok=()=>{const o=btn.textContent;btn.textContent='Copiado';setTimeout(()=>btn.textContent=o,1600)};
+ if(navigator.clipboard)navigator.clipboard.writeText(t).then(ok).catch(fb);else fb();
+ function fb(){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');ok()}catch(e){}document.body.removeChild(ta)}
+}
+
+function descargar(){
+ const L=[],res=resumenPentagono();
+ L.push('INFORME DE DIAGNÓSTICO — LECTURA CRÍTICA CON IA');
+ L.push('Generado el '+new Date().toLocaleString('es'));
+ L.push('Componentes completados: '+hechos()+' de 8');L.push('');
+ L.push('— ACTITUD FRENTE A LA IA —');L.push(res.titulo);
+ EJES.forEach(e=>{const v=ejeVal(e.id);
+  L.push('  '+e.nom+': '+(v===null?'sin datos':v+' → '+(v>=50?e.b:e.a)));
+  (S.actitud[e.id]||[]).forEach(x=>L.push('     · '+x.fuente+': '+(x.polo?e.b:e.a)))});
+ L.push('');
+ if(S.sensibilidad){const c=centroide(S.sensibilidad.pts);
+  L.push('— TEMPERATURA LECTORA —');
+  L.push('  Centro: '+Math.round(c.x)+' en sentir-entender, '+Math.round(c.y)+' en entrega-desconfianza');
+  L.push('  Dispersión entre situaciones: '+dispersion(S.sensibilidad.pts));
+  L.push('  Palabras del texto reconocidas: '+S.sensibilidad.aciertos+'/3');
+  L.push('  Ironía localizada: '+(S.sensibilidad.ironia?'sí':'no del todo'));
+  L.push(prosaSensible(S.sensibilidad).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());L.push('')}
+ const ejL=['literal','inferencial','critica','contra'],nm=['Literal','Inferencial','Crítica','Contraargumentativa'];
+ if(ejL.some(e=>S.lectora[e].length)){L.push('— HABILIDAD LECTORA —');
+  ejL.forEach((e,i)=>{const a=S.lectora[e];L.push('  '+nm[i]+': '+(a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0))});L.push('')}
+ if(S.ciclo){L.push('— CICLO DE CONSULTA —');
+  L.push('  Orden: '+S.ciclo.aciertosOrden+'/7 posiciones correctas');
+  L.push('  Eslabón roto del caso: Confirmación. Tu mayor peso: '+PASOS[S.ciclo.miMax].n);
+  PASOS.forEach((p,i)=>L.push('  '+p.n+': '+S.ciclo.pesos[i]+' (ideal '+CASO_CICLO.ideal[i]+')'));L.push('')}
+ if(Object.keys(S.habitos).length){L.push('— RUEDA DE HÁBITOS —');
+  HABITOS.forEach(h=>{if(S.habitos[h.id]!==undefined)L.push('  '+h.nom+': '+(h.tipo==='escritura'?'completado':(S.habitos[h.id]===h.ok?'correcto':'incorrecto')))});L.push('')}
+ if(S.autoria){L.push('— AUTORÍA —');L.push('  '+S.autoria.aciertos+'/7 casos');L.push('')}
+ if(S.patrones){L.push('— PATRONES DE TEXTO CON IA —');L.push('  '+S.patrones.aciertos+'/3 veredictos, '+S.patrones.marcas+' rastros marcados');L.push('')}
+ if(res.debil)L.push('QUÉ PRACTICAR PRIMERO: '+res.debil.nom);
+ const b=new Blob([L.join('\n')],{type:'text/plain;charset=utf-8'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='diagnostico-lectura-critica.txt';
+ document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+pintar();
+
+</script>
+</body>
+</html>
