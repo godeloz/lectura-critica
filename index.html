@@ -217,7 +217,8 @@ select{font-family:var(--ui);font-size:15px;font-weight:600;padding:8px 30px 8px
 .vacio{border:1.5px dashed var(--linea-fuerte);border-radius:18px;padding:20px;text-align:center;
   color:var(--tinta-suave);font-size:15px;background:var(--superficie-2);max-width:var(--medida)}
 .diag-sec{margin:24px 0}
-.diag-cab{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.diag-cab{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.diag-cab h3{flex:0 1 auto}
 .diag-cab .pt{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
 .diag-cab h3{margin:0}
 .trayecto{font-size:14.5px;line-height:1.5;color:var(--tinta-media);padding:9px 0;border-bottom:1px solid var(--linea)}
@@ -249,6 +250,17 @@ details[open] summary::before{transform:rotate(90deg)}
 .etq{font-family:var(--ui);font-size:9.5px;font-weight:700;color:#fff;background:var(--rojo);
   border-radius:5px;padding:2px 5px;margin-left:4px;vertical-align:middle;top:0;white-space:nowrap}
 .menu-etq{background:var(--superficie-2);border:1px solid var(--linea);border-radius:14px;padding:13px;margin:13px 0}
+.num-fila{display:flex;gap:7px;flex-wrap:wrap}
+.num-btn{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--linea-fuerte);background:var(--superficie);
+  font-size:15px;font-weight:700;color:var(--tinta-media);padding:0;display:grid;place-items:center;
+  transition:all .16s cubic-bezier(.32,.72,0,1)}
+.num-btn:hover{border-color:var(--proceso);color:var(--proceso)}
+.num-btn.sel{background:var(--proceso);border-color:var(--proceso);color:#fff;transform:scale(1.06)}
+.num-btn.ocupado{opacity:.35}
+.num-btn[disabled]{pointer-events:none}
+.ciclo-grid{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:820px){.ciclo-grid{grid-template-columns:1fr 260px;align-items:start}
+ .ciclo-col{position:sticky;top:64px}}
 </style>
 </head>
 <body>
@@ -345,17 +357,15 @@ const T1_PALABRAS=[
  {p:'sinecura',en:true},{p:'penumbra',en:false},{p:'disonancias',en:true},{p:'vestigio',en:false},
  {p:'epopeya',en:true},{p:'crepúsculo',en:false},{p:'magnánimos',en:true},{p:'efímero',en:false},
  {p:'maraña',en:true},{p:'reliquia',en:false},{p:'usurpe',en:true},{p:'hojarasca',en:false}];
-const T1_IRONIA=['0-1','1-2','3-3','4-2','5-1','6-1'];
+const T1_EMOCIONES=['placer','gozo','inquietud','miedo','diversión','tristeza','esperanza','ternura','alegría'];
+const EMO_LUM=['placer','gozo','diversión','alegría','esperanza'];
+const EMO_SOM=['inquietud','miedo','tristeza'];
+const T1_TONOS=['coloquial','formal','académico','literario','irónico','diplomático','cercano','distante'];
+const TONOS_JUSTOS=['irónico','literario','coloquial','cercano'];
 const T1_ESCALAS=[
  {t:'El texto habla de un calendario, pero en realidad habla de la muerte.',a:'Habla del calendario',b:'Habla de la muerte'},
  {t:'La ironía del texto protege una emoción sincera.',a:'Es solo humor',b:'Protege algo sincero'},
  {t:'Terminar con una receta de pastel de queso es un chiste.',a:'Es un chiste',b:'Es el verdadero final'}];
-const T1_REGISTRO=[
- 'Sigue en el mismo tono de broma editorial con el que empezó.',
- 'Aquí entra la muerte y el tono se vuelve serio sin avisar.',
- 'La mención de las tumbas reales de Cracovia cambia la escala de todo.',
- 'La receta de cocina rompe con todo lo anterior y devuelve el texto a lo cotidiano.'];
-const T1_REG_PARR=[2,3,5,6];
 const T1_PLANO_GUIA=[
  {n:'Cuando lees por placer',c:'#E0326B'},
  {n:'Cuando lees por trabajo o estudio',c:'#5A55E0'},
@@ -456,7 +466,16 @@ const PASOS=[
 
 const CASO_CICLO={
  tit:'El comité de inversión',
- txt:'Marcela dirige investigación de mercados en una empresa de consumo masivo. Recibe un informe sectorial sobre economía de datos en América Latina para fundamentar una inversión de tres años. Le pide a una IA que le extraiga las cifras clave y con eso arma la recomendación al comité. En la reunión, un director le pregunta si los 260.000 millones de dólares son del mercado global o del latinoamericano, y de qué año es el dato. Marcela no lo sabe: la cifra venía del resumen.',
+ txt:'Marcela dirige investigación de mercados en una empresa de consumo masivo. El comité de inversión tiene que decidir el jueves si destina tres años de presupuesto a una plataforma de datos de clientes. A Marcela le toca fundamentar la recomendación.',
+ timeline:[
+  'El lunes recibe un informe sectorial de 62 páginas sobre economía de datos en América Latina. Tiene hasta el jueves.',
+  'Decide que lo que necesita son «las cifras clave» para armar tres diapositivas convincentes.',
+  'Abre la misma IA generalista que usa para todo. No le sube el informe: le pega el índice y los fragmentos que alcanza a copiar.',
+  'Escribe: «extráeme las cifras más importantes de este informe».',
+  'Recibe ocho cifras en una lista limpia y bien redactada. Le parecen razonables y coherentes entre sí.',
+  'Elige tres para la presentación, entre ellas los 260.000 millones de dólares. Las reescribe con su estilo y arma una narrativa propia sobre la oportunidad regional.',
+  'No vuelve a abrir el informe original en ningún momento de los tres días.',
+  'El jueves presenta. Un director pregunta si esos 260.000 millones son del mercado global o del latinoamericano, y de qué año es el dato.'],
  clave:5,
  ideal:[3,1,2,2,1,5,1],
  por:'La instrucción de Marcela estuvo bien y el resumen era correcto. Lo que faltó fue volver a la fuente antes de llevar la cifra a un comité que decide una inversión de tres años. Confirmación es el paso más barato de hacer y el más caro de saltarse: cuesta dos minutos y sostiene tu credibilidad delante de un directorio.',
@@ -569,12 +588,22 @@ const TEXTOS_IA=[
  {tit:'Texto 1',ia:true,
   cuerpo:'La lectura crítica constituye hoy una competencia fundamental para el desarrollo personal, académico y profesional. En este contexto, resulta evidente que no solo permite comprender mejor los textos, sino también formar ciudadanos capaces de discernir. Numerosos especialistas coinciden en señalar que esta habilidad se ha vuelto más necesaria que nunca. Dicho de otro modo, leer críticamente es leer con criterio. En definitiva, se trata de una capacidad que debemos seguir fortaleciendo.',
   rev:'Es IA. Está la lista de tres en la primera línea, la fórmula «no solo… sino también», la autoridad sin nombre («numerosos especialistas»), y sobre todo dice tres veces lo mismo encadenado con «dicho de otro modo» y «en definitiva». No hay una sola afirmación que se pueda verificar.'},
+
  {tit:'Texto 2',ia:true,
-  cuerpo:'La inteligencia artificial está transformando radicalmente la manera en que las organizaciones abordan sus procesos. Es importante destacar que esta transformación no es meramente tecnológica, sino también cultural y organizacional. Las empresas que logren adaptarse obtendrán ventajas significativas, mientras que aquellas que no lo hagan podrían quedar rezagadas. Por lo tanto, resulta crucial adoptar un enfoque estratégico e integral que contemple tanto las oportunidades como los desafíos del nuevo paradigma.',
-  rev:'Es IA. «Es importante destacar», «por lo tanto, resulta crucial», «enfoque estratégico e integral», «el nuevo paradigma». Todo es cierto y nada es concreto: no hay una empresa, un año, un proceso ni una cifra. El texto podría copiarse a cualquier sector cambiando dos palabras.'},
+  cuerpo:'El teletrabajo — esa modalidad que la pandemia convirtió en norma — ha transformado profundamente nuestra relación con el espacio laboral. No se trata únicamente de un cambio logístico, sino también de una reconfiguración cultural. Las organizaciones que sepan navegar esta transición — con flexibilidad, empatía y visión estratégica — serán las que prosperen. Porque al final del día, el trabajo no es un lugar: es lo que hacemos.',
+  rev:'Es IA. Tres rayas largas en cuatro frases, todas usadas para el mismo tipo de aclaración elegante. Está «no se trata únicamente de… sino también», la lista de tres virtudes abstractas, el «al final del día» y el cierre con antítesis de eslogan. Ninguna organización, ningún dato, ninguna fecha.'},
+
  {tit:'Texto 3',ia:false,
   cuerpo:'En la era digital, la información se ha convertido en el activo más preciado, al posicionarse como el «nuevo oro» y uno de los «mantras» más repetidos en todos los sectores de negocio. En este contexto, la data economy se posiciona como un motor fundamental que impulsa la innovación, la eficiencia y el crecimiento económico en todo el mundo. América Latina, aunque enfrenta desafíos, vislumbra un futuro prometedor a medida que abraza las oportunidades que esta revolución de información ofrece.',
-  rev:'Es humano, y es la trampa de este ejercicio. Lo escribió Esther Rivaroll, directora general de una empresa de datos: es el mismo artículo que leíste en otros componentes. Tiene «en este contexto», lista de tres, «abraza», «vislumbra», metáforas gastadas. Todas las marcas que aprendiste a buscar, y ninguna máquina detrás. La conclusión no es que las marcas no sirvan: es que detectan un registro, el de la prosa corporativa, que las IA imitan porque aprendieron de ella. Marcar rastros no es lo mismo que probar autoría.'}];
+  rev:'Es humano, y es la trampa de este ejercicio. Lo escribió Esther Rivaroll, directora general de una empresa de datos: es el mismo artículo que leíste en otros componentes. Tiene «en este contexto», lista de tres, «abraza», «vislumbra», metáforas gastadas. Todas las marcas que aprendiste a buscar, y ninguna máquina detrás. La conclusión no es que las marcas no sirvan: es que detectan un registro, el de la prosa corporativa, que las IA imitan porque aprendieron de ella.'},
+
+ {tit:'Texto 4',ia:true,
+  cuerpo:'La inteligencia artificial está transformando radicalmente la manera en que las organizaciones abordan sus procesos. Es importante destacar que esta transformación no es meramente tecnológica, sino también cultural y organizacional. Las empresas que logren adaptarse obtendrán ventajas significativas, mientras que aquellas que no lo hagan podrían quedar rezagadas. Por lo tanto, resulta crucial adoptar un enfoque estratégico e integral que contemple tanto las oportunidades como los desafíos del nuevo paradigma.',
+  rev:'Es IA. «Es importante destacar», «por lo tanto, resulta crucial», «enfoque estratégico e integral», «el nuevo paradigma». Todo es cierto y nada es concreto: no hay una empresa, un año, un proceso ni una cifra. El texto podría copiarse a cualquier sector cambiando dos palabras.'},
+
+ {tit:'Texto 5',ia:false,
+  cuerpo:'Mi papá guardaba los recibos del mercado dentro de un frasco de mayonesa vacío, encima de la nevera. Nunca supe para qué — creo que él tampoco — pero cada tanto los sacaba todos y los revisaba, como quien revisa un álbum. Cuando vendimos la casa encontré el frasco con setenta y tres recibos y una boleta del taller mecánico de 1994. Los boté todos menos ese. Todavía no sé por qué ese.',
+  rev:'Es humano, y tiene una raya larga en el medio a propósito. Si lo marcaste como IA por la raya, acabas de cometer el error que este ejercicio quiere mostrarte: ninguna marca suelta es prueba. Aquí hay un yo, un objeto raro y específico (un frasco de mayonesa), un número exacto que nadie inventaría (setenta y tres), una fecha, y un final que no concluye nada. Eso es lo contrario de la prosa de máquina.'}];
 
 /* ===================================================================
    8 · HABILIDAD LECTORA
@@ -734,12 +763,12 @@ VISTAS.generador=()=>`
    1 · TEMPERATURA LECTORA
    =================================================================== */
 const M1={
- pal:[],tono:null,esc:[50,50,50],reg:null,pts:[],
- reset(){this.pal=[];this.tono=null;this.esc=[50,50,50];this.reg=null;this.pts=[]},
+ pal:[],emo:[],esc:[50,50,50],ton:[],pts:[],
+ reset(){this.pal=[];this.emo=[];this.esc=[50,50,50];this.ton=[];this.pts=[]},
  toggle(i){const k=this.pal.indexOf(i);if(k>=0)this.pal.splice(k,1);else if(this.pal.length<3)this.pal.push(i);repintar()},
- setTono(i,j){this.tono=i+'-'+j;repintar()},
+ togEmo(e){const k=this.emo.indexOf(e);if(k>=0)this.emo.splice(k,1);else if(this.emo.length<3)this.emo.push(e);repintar()},
+ togTon(t){const k=this.ton.indexOf(t);if(k>=0)this.ton.splice(k,1);else if(this.ton.length<2)this.ton.push(t);repintar()},
  setEsc(i,v){this.esc[i]=+v},
- setReg(i){this.reg=i;repintar()},
  poner(ev){
   if(this.pts.length>=3)return;
   const el=$('plano'),r=el.getBoundingClientRect(),t=ev.touches?ev.touches[0]:ev;
@@ -750,7 +779,8 @@ const M1={
  quitar(){this.pts.pop();repintar()},
  cerrar(){
   S.sensibilidad={palabras:this.pal.slice(),aciertos:this.pal.filter(i=>T1_PALABRAS[i].en).length,
-   tono:this.tono,ironia:T1_IRONIA.includes(this.tono),esc:this.esc.slice(),reg:this.reg,pts:this.pts.slice()};
+   emo:this.emo.slice(),ton:this.ton.slice(),ironia:this.ton.includes('irónico'),
+   esc:this.esc.slice(),pts:this.pts.slice()};
   EST.sensibilidad='hecho';paso(6);
  }};
 
@@ -774,10 +804,11 @@ VISTAS.sensibilidad=()=>{
   <button class="btn ancho" ${M1.pal.length===3?'':'disabled'} onclick="paso(2)" style="margin-top:16px">Continuar</button>`;
 
  if(P===2)return cab(2)+`
-  <h2 class="mt0">Toca la frase donde más se nota que la autora está siendo irónica.</h2>
-  <div class="tarjeta"><div class="lectura">${T1.parrafos.map((p,i)=>'<p>'+p.map((f,j)=>
-    `<span class="frase ${M1.tono===i+'-'+j?'sel':''}" onclick="M1.setTono(${i},${j})">${f}</span>`).join(' ')+'</p>').join('')}</div></div>
-  <button class="btn ancho" ${M1.tono?'':'disabled'} onclick="paso(3)">Continuar</button>`;
+  <h2 class="mt0">Elige las tres emociones que más te generó el texto.</h2>
+  <p class="nota">No hay combinación correcta. Un mismo texto le produce cosas distintas a cada lector.</p>
+  <div class="chips">${T1_EMOCIONES.map(e=>`<button class="chip ${M1.emo.includes(e)?'sel':''}" onclick="M1.togEmo('${e}')">${e}</button>`).join('')}</div>
+  <span class="contador">${M1.emo.length} de 3</span>
+  <button class="btn ancho" ${M1.emo.length===3?'':'disabled'} onclick="paso(3)" style="margin-top:16px">Continuar</button>`;
 
  if(P===3)return cab(3)+`
   <h2 class="mt0">Mueve cada barra hasta donde estés de acuerdo.</h2>
@@ -788,11 +819,11 @@ VISTAS.sensibilidad=()=>{
   <button class="btn ancho" onclick="paso(4)">Continuar</button>`;
 
  if(P===4)return cab(4)+`
-  <h2 class="mt0">¿En qué momento sentiste que el texto cambiaba de tono?</h2>
-  <p class="nota">Toca el párrafo donde notaste el cambio.</p>
-  <div class="tarjeta"><div class="lectura">${T1_REG_PARR.map((pi,i)=>
-    `<span class="parr-sel ${M1.reg===i?'sel':''}" onclick="M1.setReg(${i})">${T1.parrafos[pi].join(' ')}</span>`).join('')}</div></div>
-  <button class="btn ancho" ${M1.reg!==null?'':'disabled'} onclick="paso(5)">Continuar</button>`;
+  <h2 class="mt0">¿Cómo calificarías el tono de la autora?</h2>
+  <p class="nota">Elige los dos que mejor lo describan.</p>
+  <div class="chips">${T1_TONOS.map(t=>`<button class="chip ${M1.ton.includes(t)?'sel':''}" onclick="M1.togTon('${t}')">${t}</button>`).join('')}</div>
+  <span class="contador">${M1.ton.length} de 2</span>
+  <button class="btn ancho" ${M1.ton.length===2?'':'disabled'} onclick="paso(5)" style="margin-top:16px">Continuar</button>`;
 
  if(P===5)return cab(5)+`
   <h2 class="mt0">Ubica tres puntos en el plano.</h2>
@@ -808,18 +839,9 @@ VISTAS.sensibilidad=()=>{
   <div class="fila">${M1.pts.length?`<button class="btn sec chico" onclick="M1.quitar()">Quitar el último</button>`:''}</div>
   <button class="btn ancho" ${M1.pts.length===3?'':'disabled'} onclick="M1.cerrar()" style="margin-top:14px">Ver mi temperatura</button>`;
 
- const d=S.sensibilidad;
  return `${barraHecho('sensibilidad','Puedes revisar tu retrato abajo o empezarlo de nuevo.')}
   <h1>Tu temperatura lectora</h1>
-  ${prosaSensible(d)}
-  <h2>Cómo lees, según dónde te ubicaste</h2>
-  ${planoSVG(d.pts)}
-  <p class="nota">${dispersionTxt(d.pts)}</p>
-  <h2>Tus inclinaciones</h2>
-  ${barrasDiv(d)}
-  <div class="tarjeta"><h3 class="mt0">Las palabras que elegiste</h3>
-   <div class="chips" style="margin:10px 0 0">${d.palabras.map(i=>`<span class="chip ${T1_PALABRAS[i].en?'rev-si':'rev-no'}">${T1_PALABRAS[i].p}</span>`).join('')}</div>
-   <p class="nota" style="margin-top:12px">${d.aciertos===3?'Las tres estaban en el texto. Elegiste desde lo que leíste, no desde lo que te sonaba bonito.':d.aciertos===0?'Ninguna de las tres estaba en el texto. Elegiste palabras hermosas, pero de otro texto: el que imaginaste mientras leías.':`${d.aciertos} de 3 estaban en el texto. Las otras las trajiste tú: son las palabras que el texto te sugirió sin escribirlas.`}</p></div>
+  ${blkSensible()}
   <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 
@@ -843,10 +865,20 @@ function prosaSensible(d){
  if(disp<=12)p3=`Los tres puntos que colocaste están muy juntos (dispersión de ${disp} sobre 100). Lees más o menos igual leas lo que leas: tienes una manera propia y estable. Eso da consistencia, y también significa que un texto que pide otro modo de lectura te va a encontrar con el mismo repertorio.`;
  else if(disp>=28)p3=`Los tres puntos están muy separados (dispersión de ${disp} sobre 100). Cambias de modo de lectura según lo que tengas delante: no lees igual por placer que por trabajo. Es un repertorio amplio, y lo que conviene revisar es si el cambio lo decides tú o lo decide el formato del texto.`;
  else p3=`Tus tres puntos tienen una separación moderada (dispersión de ${disp} sobre 100). Ajustas algo tu manera de leer según el contexto, sin cambiar de raíz. Es lo más frecuente.`;
- const p4=d.ironia
-  ?'En la ironía acertaste el tipo de frase: marcaste un lugar donde el texto gira y dice una cosa para significar otra. Ahí es donde vive.'
-  :'En la ironía marcaste una frase más descriptiva. No está mal, porque el texto entero es irónico. Pero la ironía se concentra donde hay un giro, como en el cierre, donde la autora usa las pasas de una receta de cocina para despedirse de sus lectores.';
- return `<p>${p1} ${p2}</p><p>${p3}</p><p>${p4}</p>`;
+ const lum=d.emo.filter(e=>EMO_LUM.includes(e)).length;
+ const som=d.emo.filter(e=>EMO_SOM.includes(e)).length;
+ const tie=d.emo.includes('ternura')?1:0;
+ let p4;
+ if(lum>=2)p4=`Emocionalmente te quedaste con el registro luminoso del texto: elegiste ${d.emo.join(', ')}. Es una lectura fiel al juego y a la simpatía de la autora por su calendario. Lo que ese registro tiende a dejar afuera es la línea sobre el único libro que no se propone sobrevivir a nuestra muerte, que es donde el texto se pone serio de verdad.`;
+ else if(som>=2)p4=`Emocionalmente te quedaste con lo inquietante: elegiste ${d.emo.join(', ')}. Es una lectura que va al fondo del texto, donde aparecen la liquidación de las hojas y las tumbas reales. El riesgo de esa entrada es perderse el humor, que en este texto no es decoración: es la forma en que la autora consigue hablar de la muerte sin solemnidad.`;
+ else if(tie&&lum)p4=`Elegiste ${d.emo.join(', ')}: una mezcla de afecto y disfrute. Leíste el texto como lo que en buena parte es, una declaración de cariño hacia un objeto que nadie defiende.`;
+ else p4=`Elegiste ${d.emo.join(', ')}: emociones de registros distintos. El texto lo permite, porque está construido justo sobre esa mezcla, y percibir las dos capas a la vez no es lo más común.`;
+ const justos=d.ton.filter(t=>TONOS_JUSTOS.includes(t)).length;
+ let p5;
+ if(d.ironia)p5=`En el tono nombraste la ironía, que es la operación central del texto: decir una cosa para significar otra, como cuando usa las pasas de una receta de cocina para despedirse de sus lectores. Junto con «${d.ton.filter(t=>t!=='irónico')[0]}», es una lectura precisa del registro.`;
+ else if(justos===2)p5=`En el tono elegiste ${d.ton.join(' y ')}, que describen bien la superficie del texto. Lo que quedó sin nombrar es la ironía, que es su motor: casi cada frase dice algo distinto de lo que afirma literalmente.`;
+ else p5=`En el tono elegiste ${d.ton.join(' y ')}. Ese registro no es el de este texto: aquí hay una autora que se ríe, que digresiona y que se despide con una receta de cocina. Conviene revisar si estás leyendo el tono del texto o el tono que esperabas de una premio Nobel.`;
+ return `<p>${p1} ${p2}</p><p>${p3}</p><p>${p4}</p><p>${p5}</p>`;
 }
 function dispersionTxt(pts){
  return `El punto grande es tu centro: el promedio de las tres situaciones. El área sombreada muestra cuánto se mueve tu lectura entre una situación y otra.`;
@@ -874,27 +906,9 @@ VISTAS.actitud=()=>{
     <button class="op ${M2.resp[P]===0?'sel':''}" onclick="M2.elegir(0)"><span class="letra">A</span><span>${q.a}</span></button>
     <button class="op ${M2.resp[P]===1?'sel':''}" onclick="M2.elegir(1)"><span class="letra">B</span><span>${q.b}</span></button></div>`;
  }
- const res=resumenPentagono();
- const orden=EJES.map(e=>({e,v:ejeVal(e.id)})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
- const fuertes=orden.slice(0,2),debiles=orden.slice(-2).reverse();
  return `${barraHecho('actitud','Tus diez respuestas quedaron registradas y alimentan el pentágono.')}
   <h1>Tu punto de partida</h1>
-  <p class="entrada">Esto es lo que declaraste sobre ti. Los otros ejercicios ponen esas declaraciones a prueba con lo que realmente haces.</p>
-  ${radarSVG(EJES.map(e=>e.corto),EJES.map(e=>ejeVal(e.id)??0),'#5A55E0')}
-  <div class="tarjeta">${EJES.map(e=>{const v=ejeVal(e.id);return `<div style="padding:10px 0;border-bottom:1px solid var(--linea)">
-    <div style="display:flex;justify-content:space-between;font-size:15px"><b style="font-weight:660">${e.nom}</b><span style="color:var(--tinta-suave)">${v>=50?e.b:e.a}</span></div>
-    <div class="medidor"><i style="width:${v}%;background:var(--actitud)"></i></div></div>`}).join('')}</div>
-  <div class="aviso"><span class="t">${res.titulo}</span>${res.texto}</div>
-
-  <h2>Qué practicar</h2>
-  <div class="tarjeta"><h3 class="mt0" style="color:var(--ok)">Para sostener lo que ya tienes fuerte</h3>
-   ${fuertes.map(({e})=>`<p style="margin:10px 0 4px"><b>${e.nom}</b></p>${e.refuerza.map(r=>`<p class="nota" style="margin:3px 0">· ${r}</p>`).join('')}`).join('')}</div>
-  <div class="tarjeta"><h3 class="mt0" style="color:var(--proceso)">Para levantar lo que está flojo</h3>
-   ${debiles.map(({e})=>`<p style="margin:10px 0 4px"><b>${e.nom}</b></p>${e.fortalece.map(r=>`<p class="nota" style="margin:3px 0">· ${r}</p>`).join('')}`).join('')}</div>
-
-  <h2>Qué mide cada eje</h2>
-  ${EJES.map(e=>`<details><summary>${e.nom}: ${e.a} ↔ ${e.b}</summary>
-   <div class="tarjeta plana"><p style="margin:0 0 10px">${e.que}</p><p style="margin:0"><b>Por qué conviene tenerlo alto.</b> ${e.alto}</p></div></details>`).join('')}
+  ${blkActitud()}
   <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 
@@ -903,11 +917,11 @@ VISTAS.actitud=()=>{
    =================================================================== */
 const M3={
  pares:[],tipo:null,campos:{rol:'',freno:'',preg:'',espera:'',anclaje:''},nota:null,chk:null,
- reset(){this.pares=[];this.tipo=null;this.campos={rol:'',freno:'',preg:'',espera:'',anclaje:''};this.nota=null;this.chk=null},
+ reset(){this.pares=[];this.tipo=null;this.campos={rol:'',freno:'',preg:'',espera:'',anclaje:''};this.nota=null;this.chk=null;S.socratico=null},
  elegir(i,op){if(this.pares[i]!==undefined)return;this.pares[i]=op;repintar()},
  setCampo(k,v){this.campos[k]=v},
  promptFinal(){const c=this.campos;return [c.rol,c.freno,c.preg,c.espera,c.anclaje].filter(x=>x.trim()).join(' ')},
- calificar(n){this.nota=n;anotaEje(1,n>=3?1:0,'Socrático · resultado');paso(4)},
+ calificar(n){this.nota=n;if(S.socratico)S.socratico.nota=n;anotaEje(1,n>=3?1:0,'Socrático · resultado');paso(5)},
  evaluar(){
   const c=this.campos,ll=k=>c[k].trim().length>=8;
   this.chk=[
@@ -917,7 +931,8 @@ const M3={
    {n:'Espera',ok:ll('espera'),d:'Sin esto la IA hace la pregunta y se la contesta sola en el mismo mensaje.'},
    {n:'Anclaje',ok:ll('anclaje'),d:'Sin anclaje, completa los huecos con lo que sabe de otro lado y no te avisa.'}];
   anotaEje(1,this.chk.filter(x=>x.ok).length>=4?1:0,'Socrático · prompt propio');
-  EST.socratico='hecho';paso(6);
+  S.socratico={chk:this.chk.slice(),prompt:this.promptFinal(),tipo:this.tipo,nota:null};
+  EST.socratico='hecho';paso(4);
  }};
 
 VISTAS.socratico=()=>{
@@ -980,20 +995,17 @@ VISTAS.socratico=()=>{
   if(M3.nota===null)return `<div class="etiqueta-paso">4 de 4 · Probar</div>
    <h2 class="mt0">Pega tu prompt en la IA que uses y vuelve. ¿Cómo se portó?</h2>
    <p class="nota">Si no llegaste a probarlo, elige lo que esperarías que pase.</p>
-   <div class="ops">${ESCALA_IA.map((e,i)=>`<button class="op" onclick="M3.calificar(${i+1})"><span class="letra">${i+1}</span><span>${e}</span></button>`).join('')}</div>`;
-  return `<h2 class="mt0">${M3.nota>=3?'Sostuvo el diálogo.':'Se escapó hacia la respuesta.'}</h2>
+   <div class="ops">${ESCALA_IA.map((e,i)=>`<button class="op" onclick="M3.calificar(${i+1})"><span class="letra">${i+1}</span><span>${e}</span></button>`).join('')}</div>
+   <button class="btn sec ancho" onclick="paso(6)" style="margin-top:12px">Todavía no la he probado</button>`;
+  return '';}
+ if(P===5)return `<h2 class="mt0">${M3.nota>=3?'Sostuvo el diálogo.':'Se escapó hacia la respuesta.'}</h2>
    <div class="retro ${M3.nota>=3?'bien':'mal'}"><div class="cab">${M3.nota>=3?'Buen resultado':'Pasa muy seguido'}</div>
    <p>${M3.nota>=3?'Cuando una IA sostiene el diálogo, la conversación empieza a parecerse a una clase particular. Guarda ese prompt.':'La mayoría cede a la mitad: pregunta una vez y después resuelve todo junto. La salida es insistir dentro de la misma conversación: «no me diste tiempo a contestar, vuelve a preguntarme de a una».'}</p></div>
-   <button class="btn ancho" onclick="paso(6)">Ver mi resultado</button>`}
+   <button class="btn ancho" onclick="paso(6)">Ver mi resultado</button>`;
 
- const p=M3.chk?M3.chk.filter(x=>x.ok).length:0;
  return `${barraHecho('socratico','Tu prompt y las cinco piezas quedaron registrados.')}
-  <h1>${p}<span style="color:var(--tinta-suave)"> de 5 piezas</span></h1>
-  <p class="entrada">${p===5?'Escribiste la anatomía completa. Eso es haberla entendido, no memorizado.':p>=3?'Tienes lo esencial. Lo que falta son justo las piezas que la IA usa como vía de escape.':'Todavía le estás pidiendo a la IA que resuelva. Mira qué piezas quedaron vacías: cada una es una puerta abierta.'}</p>
-  <div class="tarjeta">${(M3.chk||[]).map(c=>`<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--linea)">
-   <span style="flex:0 0 22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:${c.ok?'var(--ok)':'var(--linea-fuerte)'}">${c.ok?'✓':'—'}</span>
-   <span><b>${c.n}</b>${c.ok?'':`<span class="nota" style="display:block">${c.d}</span>`}</span></div>`).join('')}</div>
-  <div class="tarjeta plana"><h3 class="mt0">Tu prompt</h3><p class="lectura" style="font-size:16.5px;margin:0">${M3.promptFinal()?esc(M3.promptFinal()):'—'}</p></div>
+  <h1>Tu prompt socrático</h1>
+  ${blkSocratico()}
   <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 
@@ -1001,12 +1013,17 @@ VISTAS.socratico=()=>{
    4 · CICLO DE CONSULTA
    =================================================================== */
 const M4={
- asig:{},verif:false,pesos:null,
- reset(){this.asig={};this.verif=false;this.pesos=null},
- poner(paso,pos){
+ asig:{},verif:false,pesos:null,mezcla:null,
+ reset(){this.asig={};this.verif=false;this.pesos=null;this.mezcla=null},
+ initMezcla(){if(!this.mezcla){const a=[0,1,2,3,4,5,6];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  if(a.every((v,i)=>v===i)){[a[0],a[6]]=[a[6],a[0]]}
+  this.mezcla=a}},
+ poner(pasoIdx,pos){
   if(this.verif)return;
+  if(this.asig[pasoIdx]===pos){delete this.asig[pasoIdx];repintar();return}
   for(const k in this.asig) if(this.asig[k]===pos) delete this.asig[k];
-  if(pos==='') delete this.asig[paso]; else this.asig[paso]=+pos;
+  this.asig[pasoIdx]=pos;
   repintar();
  },
  verificar(){this.verif=true;repintar()},
@@ -1031,6 +1048,7 @@ VISTAS.ciclo=()=>{
   <button class="btn ancho" onclick="paso(1)">Empezar</button>`}
 
  if(P===1){
+  M4.initMezcla();
   const completo=Object.keys(M4.asig).length===7;
   const col=[1,2,3,4,5,6,7].map(pos=>{
    const k=Object.keys(M4.asig).find(k=>M4.asig[k]===pos);
@@ -1042,16 +1060,15 @@ VISTAS.ciclo=()=>{
   return `<div class="etiqueta-paso">Parte 1 · El orden</div>
    <h2 class="mt0">Asigna a cada paso su posición en el ciclo.</h2>
    <p class="nota">Lee cada uno y elige su número. Si repites un número, el anterior se libera.</p>
-   <div style="display:grid;gap:18px;grid-template-columns:1fr">
-    <div>${PASOS.map((p,i)=>{
-     const pos=M4.asig[i],bien=M4.verif&&pos===i+1;
+   <div class="ciclo-grid">
+    <div>${M4.mezcla.map(i=>{const p=PASOS[i],pos=M4.asig[i],bien=M4.verif&&pos===i+1;
      return `<div class="tarjeta ancha" style="margin:0 0 10px;${M4.verif?(bien?'border-color:var(--ok)':'border-color:var(--alerta)'):''}">
-      <div style="display:flex;gap:12px;align-items:flex-start">
-       <div style="flex:1"><h3 class="mt0" style="margin-bottom:4px">${p.n}</h3><p class="nota" style="margin:0">${p.d}</p></div>
-       <select onchange="M4.poner(${i},this.value)" ${M4.verif?'disabled':''} aria-label="Posición de ${p.n}">
-        <option value="">—</option>${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${pos===n?'selected':''}>${n}</option>`).join('')}</select>
-      </div>${M4.verif&&!bien?`<p class="nota" style="margin:9px 0 0;color:var(--alerta)">Va en la posición ${i+1}.</p>`:''}</div>`}).join('')}</div>
-    <div><h3 class="mt0">Tu ciclo</h3><div class="plano-guia" style="margin-top:8px">${col}</div></div>
+      <h3 class="mt0" style="margin-bottom:4px">${p.n}</h3><p class="nota" style="margin:0 0 12px">${p.d}</p>
+      <div class="num-fila">${[1,2,3,4,5,6,7].map(n=>{
+        const mio=pos===n, ocupado=Object.keys(M4.asig).some(k=>M4.asig[k]===n&&+k!==i);
+        return `<button class="num-btn ${mio?'sel':''} ${ocupado&&!mio?'ocupado':''}" ${M4.verif?'disabled':''} onclick="M4.poner(${i},${n})" aria-label="Posición ${n}">${n}</button>`}).join('')}</div>
+      ${M4.verif&&!bien?`<p class="nota" style="margin:11px 0 0;color:var(--alerta)">Va en la posición ${i+1}.</p>`:''}</div>`}).join('')}</div>
+    <div class="ciclo-col"><h3 class="mt0">Tu ciclo</h3><div class="plano-guia" style="margin-top:8px">${col}</div></div>
    </div>
    ${M4.verif?`<div class="retro ${Object.keys(M4.asig).filter(k=>M4.asig[k]===+k+1).length===7?'bien':'neutro'}">
     <div class="cab">Acertaste ${Object.keys(M4.asig).filter(k=>M4.asig[k]===+k+1).length} de 7 posiciones</div>
@@ -1065,6 +1082,10 @@ VISTAS.ciclo=()=>{
   return `<div class="etiqueta-paso">Parte 2 · Un caso real</div>
    <h2 class="mt0">${CASO_CICLO.tit}</h2>
    <div class="tarjeta plana"><p style="margin:0;font-size:16.5px;line-height:1.55">${CASO_CICLO.txt}</p></div>
+   <h3>Lo que hizo, día por día</h3>
+   <p class="nota">Cada una de estas ocho decisiones cae en algún paso del ciclo. Léelas pensando en cuál fue la que costó cara.</p>
+   <div class="plano-guia">${CASO_CICLO.timeline.map((l,i)=>`<div class="guia-it" style="align-items:flex-start">
+     <span class="n" style="margin-top:1px">${i+1}</span><span style="flex:1;line-height:1.4">${l}</span></div>`).join('')}</div>
    <h3>Reparte 15 puntos de atención</h3>
    <p class="nota">Si pudieras volver atrás y acompañar a Marcela, ¿dónde pondrías la atención? Más puntos donde creas que estuvo el problema.</p>
    <div class="tarjeta">${PASOS.map((p,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--linea)">
@@ -1077,17 +1098,9 @@ VISTAS.ciclo=()=>{
    <p class="nota">Puntos sin repartir: <b style="color:var(--tinta);font-size:17px">${15-u}</b></p>
    <button class="btn ancho" ${u===15?'':'disabled'} onclick="M4.confirmar()">${u===15?'Confirmar reparto':`Faltan ${15-u} puntos`}</button>`}
 
- const d=S.ciclo;
  return `${barraHecho('ciclo','Tu orden y tu reparto quedaron registrados.')}
   <h1>Tu perfil de proceso</h1>
-  <div class="tarjeta"><h3 class="mt0">El orden</h3>
-   <p style="margin:0">Acertaste <b>${d.aciertosOrden} de 7</b> posiciones del ciclo.</p></div>
-  <h2>El eslabón roto era ${PASOS[CASO_CICLO.clave].n}</h2>
-  <div class="retro ${d.acierto?'bien':'neutro'}"><div class="cab">${d.acierto?'✓ Pusiste el peso donde estaba':`Tú pusiste el peso en ${PASOS[d.miMax].n}`}</div>
-   <p>${CASO_CICLO.lecturas[d.miMax]}</p><p>${CASO_CICLO.por}</p></div>
-  <h3>Tu reparto contra el ideal del caso</h3>
-  ${barrasComparadas(PASOS.map(p=>p.n),d.pesos,CASO_CICLO.ideal)}
-  <p class="nota">La marca vertical señala dónde habría estado la atención ideal.</p>
+  ${blkCiclo()}
   <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 
@@ -1167,16 +1180,10 @@ VISTAS.autoria=()=>{
    ${r!==undefined?`<div class="retro ${r===c.ok?'bien':'mal'}"><div class="cab">${r===c.ok?'✓ Sí':'No era esa'}</div><p>${c.por}</p></div>
     <button class="btn ancho" onclick="M7.seguir()" style="margin-top:13px">${P<AUTORIA.length-1?'Siguiente caso':'Ver el decálogo'}</button>`:''}`}
 
- const a=S.autoria.aciertos;
  return `${barraHecho('autoria','Tus siete respuestas quedaron registradas.')}
-  <h1>${a} de 7</h1>
-  <p class="entrada">${a>=6?'Distingues declarar de aparentar que declaras, incluso en los casos donde lo correcto era no declarar.':a>=4?'Tienes el principio. Lo que falla son los casos donde la transparencia consiste en no inflar la declaración, o en no llevarla al lugar equivocado.':'Los siete casos apuntaban a lo mismo: una declaración sirve cuando permite a quien lee juzgar algo. Si no, es decoración o es trámite.'}</p>
-  <h2>Decálogo de transparencia</h2>
-  <p class="nota">Aplicable a lo empresarial, lo profesional y lo académico.</p>
-  ${DECALOGO.map((d,i)=>`<div class="tarjeta" style="margin:9px 0"><h3 class="mt0">${i+1}. ${d.n}</h3><p style="margin:0">${d.d}</p></div>`).join('')}
-  <div class="acciones"><button class="btn sec" onclick="copiarDecalogo(this)">Copiar decálogo</button>
-   <button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>
-  <button class="btn sec ancho" onclick="ir('inicio')">Volver al menú</button>`;
+  <h1>Autoría en práctica</h1>
+  ${blkAutoria()}
+  <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 function copiarDecalogo(b){copiar(DECALOGO.map((d,i)=>(i+1)+'. '+d.n+' — '+d.d).join('\n'),b)}
 
@@ -1184,8 +1191,8 @@ function copiarDecalogo(b){copiar(DECALOGO.map((d,i)=>(i+1)+'. '+d.n+' — '+d.d
    7 · PATRONES DE TEXTO CON IA
    =================================================================== */
 const M8={
- pend:null,txtPend:null,marcas:{0:[],1:[],2:[]},veredicto:{},
- reset(){this.pend=null;this.txtPend=null;this.marcas={0:[],1:[],2:[]};this.veredicto={}},
+ pend:null,txtPend:null,marcas:{0:[],1:[],2:[],3:[],4:[]},veredicto:{},
+ reset(){this.pend=null;this.txtPend=null;this.marcas={0:[],1:[],2:[],3:[],4:[]};this.veredicto={}},
  tocar(ti,wi){
   if(this.veredicto[ti]!==undefined)return;
   const ya=this.marcas[ti].findIndex(m=>wi>=m.ini&&wi<=m.fin);
@@ -1201,7 +1208,7 @@ const M8={
  cancelar(){this.pend=null;this.txtPend=null;repintar()},
  votar(ti,ia){
   this.veredicto[ti]=ia;this.pend=null;this.txtPend=null;
-  if(Object.keys(this.veredicto).length===3){
+  if(Object.keys(this.veredicto).length===TEXTOS_IA.length){
    S.patrones={aciertos:TEXTOS_IA.filter((t,i)=>this.veredicto[i]===t.ia).length,
     marcas:Object.values(this.marcas).reduce((s,a)=>s+a.length,0)};
    EST.patrones='hecho';
@@ -1216,11 +1223,11 @@ VISTAS.patrones=()=>{
   <p class="entrada">Este ejercicio no diagnostica cómo lees: entrena el ojo. Vas a marcar rastros de IA en tres textos y decidir quién escribió cada uno.</p>
   <div class="tarjeta"><h3 class="mt0">Las cinco etiquetas</h3>
    ${ETIQUETAS.map(e=>`<div style="padding:9px 0;border-bottom:1px solid var(--linea)"><b>${e.n}</b><span class="nota" style="display:block">${e.d}</span></div>`).join('')}</div>
-  <div class="aviso ojo"><span class="t">Antes de empezar</span>Ninguna marca suelta prueba nada, y los detectores automáticos tampoco son fiables. Uno de los tres textos está ahí para demostrártelo.</div>
+  <div class="aviso ojo"><span class="t">Antes de empezar</span>Son cinco textos. Ninguna marca suelta prueba nada, y los detectores automáticos tampoco son fiables: dos de los cinco están ahí para demostrártelo.</div>
   <button class="btn ancho" onclick="paso(1)">Empezar</button>`}
 
  if(P===1){
-  const listo=Object.keys(M8.veredicto).length===3;
+  const listo=Object.keys(M8.veredicto).length===TEXTOS_IA.length;
   return `<div class="etiqueta-paso">Marca los rastros de IA</div>
    <h2 class="mt0">Toca una palabra, o varias seguidas, y elige qué tipo de rastro es.</h2>
    <p class="nota">Toca una marca ya hecha para quitarla. Cuando termines con un texto, decide quién lo escribió.</p>
@@ -1249,13 +1256,9 @@ VISTAS.patrones=()=>{
     </div>`}).join('')}
    ${listo?`<button class="btn ancho" onclick="paso(2)">Ver mi resultado</button>`:''}`}
 
- const a=S.patrones.aciertos;
  return `${barraHecho('patrones','Tus marcas y veredictos quedaron registrados.')}
-  <h1>${a} de 3</h1>
-  <p class="entrada">${a===3?'Los tres, incluido el tercero, que es la trampa: humano, publicado y firmado, con todas las marcas que aprendiste a buscar.':'El tercer texto separa a quien lee patrones de quien busca marcas sueltas. Es humano: lo escribió la directora general de una empresa de datos, y es el mismo artículo que aparece en otros componentes.'}</p>
-  <div class="tarjeta"><h3 class="mt0">Marcaste ${S.patrones.marcas} rastro${S.patrones.marcas===1?'':'s'}</h3>
-   <p style="margin:0">Lo que vale de este ejercicio no es cuántos marcaste, sino haber visto que las mismas marcas aparecen en prosa humana. Las IA aprendieron a escribir leyendo prosa corporativa: por eso suenan igual.</p></div>
-  <div class="aviso"><span class="t">Lo que hay que llevarse</span>Marcar rastros no es lo mismo que probar autoría. Un texto es sospechoso cuando acumula varias etiquetas a la vez y, sobre todo, cuando no hay nadie adentro: ni un yo, ni una anécdota, ni un dato que se pueda verificar.</div>
+  <h1>Ojo para textos con IA</h1>
+  ${blkPatrones()}
   <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 
@@ -1263,10 +1266,12 @@ VISTAS.patrones=()=>{
    8 · HABILIDAD LECTORA
    =================================================================== */
 const M9={resp:{},orden:null,esc:50,
- reset(){this.resp={};this.orden=null;this.esc=50},
+ reset(){this.resp={};this.orden=null;this.esc=50;this.elec={}},
  initOrden(){if(!this.orden)this.orden=[1,2,0]},
  mover(i,d){const a=this.orden,j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];repintar()},
- registrar(bien){const q=LECTORA_Q[P];S.lectora[q.eje].push(bien?1:0);this.resp[P]=bien;repintar()},
+ elec:{},
+ registrar(bien,i){const q=LECTORA_Q[P];S.lectora[q.eje].push(bien?1:0);this.resp[P]=bien;
+  if(i!==undefined)this.elec[P]=i;repintar()},
  seguir(){if(P<LECTORA_Q.length-1){this.esc=50;paso(P+1)}else{EST.lectora='hecho';paso(LECTORA_Q.length)}}};
 
 VISTAS.lectora=()=>{
@@ -1284,11 +1289,13 @@ VISTAS.lectora=()=>{
   const nom={literal:'Literal',inferencial:'Inferencial',critica:'Crítica',contra:'Contraargumentativa'}[q.eje];
   const cab=`<div class="pasos">${LECTORA_Q.map((_,i)=>`<i class="${i<=P?'on':''}"></i>`).join('')}</div>
    <div class="etiqueta-paso">Pregunta ${P+1} de 10 · ${nom}</div><h2 class="mt0">${q.t}</h2>`;
-  const pie=r?`<div class="retro ${M9.resp[P]?'bien':'neutro'}"><div class="cab">${M9.resp[P]?'✓ Correcto':'Mira esto'}</div><p>${q.por}</p></div>
+  const pie=r?`<div class="retro ${M9.resp[P]?'bien':'mal'}"><div class="cab">${M9.resp[P]?'✓ Correcto':'✕ No era esa'}</div><p>${q.por}</p></div>
    <button class="btn ancho" onclick="M9.seguir()" style="margin-top:13px">${P<9?'Siguiente':'Ver mi radar'}</button>`:'';
 
-  if(q.tipo==='multi')return cab+`<div class="ops">${q.ops.map((o,i)=>{const cls=!r?'':(i===q.ok?'bien':'apagada');
-   return `<button class="op ${cls}" ${r?'disabled':''} onclick="M9.registrar(${i}===${q.ok})"><span class="letra">${String.fromCharCode(65+i)}</span><span>${o}</span></button>`}).join('')}</div>`+releer(T3)+pie;
+  if(q.tipo==='multi')return cab+`<div class="ops">${q.ops.map((o,i)=>{
+   const cls=!r?'':(i===q.ok?'bien':(i===M9.elec[P]?'mal':'apagada'));
+   const mk=!r?String.fromCharCode(65+i):(i===q.ok?'✓':(i===M9.elec[P]?'✕':String.fromCharCode(65+i)));
+   return `<button class="op ${cls}" ${r?'disabled':''} onclick="M9.registrar(${i}===${q.ok},${i})"><span class="letra">${mk}</span><span>${o}</span></button>`}).join('')}</div>`+releer(T3)+pie;
 
   if(q.tipo==='ordenar'){M9.initOrden();
    return cab+`<div class="plano-guia">${M9.orden.map((idx,i)=>`<div class="guia-it ${r&&idx===i?'ok':''}" style="${r&&idx!==i?'border-color:var(--alerta)':''}">
@@ -1307,20 +1314,9 @@ VISTAS.lectora=()=>{
    ${r?'':`<button class="btn ancho" onclick="M9.registrar(Math.abs(M9.esc-${q.ideal})<=22)">Confirmar</button>`}`+releer(T3)+pie;
  }
 
- const ejes=['literal','inferencial','critica','contra'],noms=['Literal','Inferencial','Crítica','Contraarg.'];
- const largos=['literal','inferencial','crítica','contraargumentativa'];
- const vals=ejes.map(e=>{const a=S.lectora[e];return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0});
- const min=vals.indexOf(Math.min(...vals)),max=vals.indexOf(Math.max(...vals));
  return `${barraHecho('lectora','Tus diez respuestas quedaron registradas.')}
   <h1>Tu radar de lectura</h1>
-  <p class="entrada">Cuatro niveles sobre un mismo texto. Un radar disparejo es lo normal: casi nadie rinde igual en los cuatro.</p>
-  ${radarSVG(noms,vals,'#00937B')}
-  <div class="tarjeta">
-   <p><b>Tu nivel más firme es el ${largos[max]}.</b> ${['Retienes lo que el texto dice literalmente, que es la base de todo lo demás.','Sacas a la luz lo que el texto da por supuesto sin escribirlo.','Ves lo que el texto hace además de lo que afirma: sus intereses, sus omisiones.','Sabes dónde golpear un argumento para probar si aguanta.'][max]}</p>
-   <p style="margin:0"><b>El que más trabajo pide es el ${largos[min]}.</b> Abajo tienes prácticas para cada nivel.</p></div>
-  <h2>Prácticas por nivel</h2>
-  ${ejes.map((e,i)=>`<details ${i===min?'open':''}><summary>${largos[i][0].toUpperCase()+largos[i].slice(1)} · ${vals[i]}</summary>
-   <div class="tarjeta plana">${PRACTICAS_LECTORA[e].map(p=>`<p class="nota" style="margin:5px 0">· ${p}</p>`).join('')}</div></details>`).join('')}
+  ${blkLectora()}
   <div class="acciones"><button class="btn sec" onclick="ir('inicio')">Volver al menú</button><button class="btn" onclick="ir('diag')">Mi diagnóstico</button></div>`;
 };
 
@@ -1369,7 +1365,7 @@ function planoSVG(pts){
 function barrasDiv(d){
  const items=[
   {n:'Precisión sobre el texto',a:'Elegiste por sonido',b:'Elegiste por memoria',v:Math.round(d.aciertos/3*100)},
-  {n:'Oído para la ironía',a:'Frase descriptiva',b:'Frase con giro',v:d.ironia?100:0},
+  {n:'Registro emocional',a:'Luminoso',b:'Sombrío',v:Math.round((d.emo.filter(e=>EMO_SOM.includes(e)).length+(d.emo.includes('ternura')?.5:0))/3*100)},
   {n:T1_ESCALAS[0].t,a:T1_ESCALAS[0].a,b:T1_ESCALAS[0].b,v:d.esc[0]},
   {n:T1_ESCALAS[1].t,a:T1_ESCALAS[1].a,b:T1_ESCALAS[1].b,v:d.esc[1]},
   {n:T1_ESCALAS[2].t,a:T1_ESCALAS[2].a,b:T1_ESCALAS[2].b,v:d.esc[2]}];
@@ -1395,6 +1391,146 @@ function barrasComparadas(noms,vals,ideal){
    <span class="ideal" style="left:calc(${ideal[i]/max*100}% - 1px)"></span></div></div>`).join('')}</div>`;
 }
 
+
+/* ===================================================================
+   BLOQUES DE RESULTADO COMPARTIDOS
+   Cada componente y el diagnóstico usan exactamente el mismo bloque.
+   =================================================================== */
+function blkSensible(){
+ const d=S.sensibilidad; if(!d)return '';
+ return `${prosaSensible(d)}
+  <h3>Cómo lees, según dónde te ubicaste</h3>
+  ${planoSVG(d.pts)}
+  <p class="nota">${dispersionTxt(d.pts)}</p>
+  <h3>Tus inclinaciones</h3>
+  ${barrasDiv(d)}
+  <div class="tarjeta"><h3 class="mt0">Lo que sentiste y lo que oíste</h3>
+   <p class="nota" style="margin:0 0 6px">Emociones</p>
+   <div class="chips" style="margin:0 0 14px">${d.emo.map(e=>`<span class="chip" style="border-color:var(--sensibilidad);color:var(--sensibilidad)">${e}</span>`).join('')}</div>
+   <p class="nota" style="margin:0 0 6px">Tono de la autora</p>
+   <div class="chips" style="margin:0">${d.ton.map(t=>`<span class="chip ${TONOS_JUSTOS.includes(t)?'rev-si':''}">${t}</span>`).join('')}</div></div>
+  <div class="tarjeta"><h3 class="mt0">Las palabras que elegiste</h3>
+   <div class="chips" style="margin:10px 0 0">${d.palabras.map(i=>`<span class="chip ${T1_PALABRAS[i].en?'rev-si':'rev-no'}">${T1_PALABRAS[i].p}</span>`).join('')}</div>
+   <p class="nota" style="margin-top:12px">${d.aciertos===3?'Las tres estaban en el texto. Elegiste desde lo que leíste, no desde lo que te sonaba bonito.':d.aciertos===0?'Ninguna de las tres estaba en el texto. Elegiste palabras hermosas, pero de otro texto: el que imaginaste mientras leías.':`${d.aciertos} de 3 estaban en el texto. Las otras las trajiste tú: son las palabras que el texto te sugirió sin escribirlas.`}</p></div>`;
+}
+
+function blkActitud(){
+ if(!Object.keys(S.actitud).length)return '';
+ const res=resumenPentagono();
+ const orden=EJES.map(e=>({e,v:ejeVal(e.id)})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
+ const fuertes=orden.slice(0,2),debiles=orden.slice(-2).reverse();
+ return `<p class="nota">Esto es lo que declaraste sobre ti. Los otros ejercicios ponen esas declaraciones a prueba con lo que realmente haces.</p>
+  ${radarSVG(EJES.map(e=>e.corto),EJES.map(e=>ejeVal(e.id)??0),'#5A55E0')}
+  <div class="tarjeta"><h3 class="mt0" style="font-size:20px">${res.titulo}</h3>
+   <p class="nota" style="margin-bottom:14px">${res.texto}</p>
+   ${EJES.map(e=>{const v=ejeVal(e.id);if(v===null)return '';
+    return `<div style="padding:9px 0"><div style="display:flex;justify-content:space-between;font-size:15px">
+     <b style="font-weight:660">${e.nom}</b><span style="color:var(--tinta-suave)">${v>=50?e.b:e.a} · ${v}</span></div>
+     <div class="medidor"><i style="width:${v}%;background:var(--actitud)"></i></div></div>`}).join('')}</div>
+  <div class="tarjeta"><h3 class="mt0">Lo que declaraste frente a lo que hiciste</h3>
+   ${EJES.map(e=>{const v=ejeVal(e.id),h=S.actitud[e.id]||[];
+    if(v===null)return `<div class="trayecto"><b>${e.nom}</b> — sin datos todavía</div>`;
+    const decl=h.filter(x=>x.fuente==='Actitud inicial'),evi=h.filter(x=>x.fuente!=='Actitud inicial');
+    let tr;
+    if(evi.length){
+     const d0=decl.length?Math.round(decl.reduce((s,x)=>s+x.polo,0)/decl.length*100):null;
+     const d1=Math.round(evi.reduce((s,x)=>s+x.polo,0)/evi.length*100);
+     tr = d0===null?` Lo demostraste en ${evi.length} ejercicio${evi.length>1?'s':''}, no solo lo dijiste.`
+      : d1>d0+15?` Dijiste estar más cerca de ${e.a.toLowerCase()}, pero al hacerlo te moviste hacia ${e.b.toLowerCase()}.`
+      : d1<d0-15?` Te declaraste ${e.b.toLowerCase()}, pero en la práctica apareció el ${e.a.toLowerCase()}. Es el hueco más común entre lo que creemos y lo que hacemos.`
+      : ` Lo que declaraste y lo que hiciste coinciden.`;
+    } else tr=' Todavía es solo lo que declaraste: ningún ejercicio lo puso a prueba.';
+    return `<div class="trayecto"><b>${e.nom}: ${v>=50?e.b:e.a}</b> (${v})${tr}</div>`}).join('')}</div>
+  <div class="tarjeta"><h3 class="mt0" style="color:var(--ok)">Para sostener lo que ya tienes fuerte</h3>
+   ${fuertes.map(({e,v})=>`<p style="margin:10px 0 4px"><b>${e.nom}</b> (${v})</p>${e.refuerza.map(r=>`<p class="nota" style="margin:3px 0">· ${r}</p>`).join('')}`).join('')}</div>
+  <div class="tarjeta"><h3 class="mt0" style="color:var(--proceso)">Para levantar lo que está flojo</h3>
+   ${debiles.map(({e,v})=>`<p style="margin:10px 0 4px"><b>${e.nom}</b> (${v})</p>${e.fortalece.map(r=>`<p class="nota" style="margin:3px 0">· ${r}</p>`).join('')}`).join('')}</div>
+  <h3>Qué mide cada eje</h3>
+  ${EJES.map(e=>`<details><summary>${e.nom}: ${e.a} ↔ ${e.b}</summary>
+   <div class="tarjeta plana"><p style="margin:0 0 10px">${e.que}</p><p style="margin:0"><b>Por qué conviene tenerlo alto.</b> ${e.alto}</p></div></details>`).join('')}`;
+}
+
+function blkSocratico(){
+ const d=S.socratico; if(!d)return '';
+ const p=d.chk.filter(x=>x.ok).length;
+ const tipo=TIPOS_LECTURA.find(t=>t.id===d.tipo);
+ return `<div class="tarjeta"><h3 class="mt0" style="font-size:20px">${p} de 5 piezas</h3>
+   <p class="nota" style="margin-bottom:12px">${p===5?'Escribiste la anatomía completa. Eso es haberla entendido, no memorizado.':p>=3?'Tienes lo esencial. Lo que falta son justo las piezas que la IA usa como vía de escape.':'Todavía le estás pidiendo a la IA que resuelva. Cada pieza vacía es una puerta abierta.'}</p>
+   ${d.chk.map(c=>`<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--linea)">
+    <span style="flex:0 0 22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:${c.ok?'var(--ok)':'var(--linea-fuerte)'}">${c.ok?'✓':'—'}</span>
+    <span><b>${c.n}</b>${c.ok?'':`<span class="nota" style="display:block">${c.d}</span>`}</span></div>`).join('')}</div>
+  <div class="tarjeta plana"><h3 class="mt0">Tu prompt${tipo?' · lectura '+tipo.nom.toLowerCase():''}</h3>
+   <p class="lectura" style="font-size:16.5px;margin:0">${d.prompt?esc(d.prompt):'—'}</p></div>
+  ${d.nota?`<div class="retro ${d.nota>=3?'bien':'mal'}"><div class="cab">Al probarlo: ${ESCALA_IA[d.nota-1].toLowerCase()}</div>
+   <p>${d.nota>=3?'Cuando una IA sostiene el diálogo, la conversación empieza a parecerse a una clase particular. Guarda ese prompt.':'La mayoría cede a la mitad: pregunta una vez y después resuelve todo junto. La salida es insistir dentro de la misma conversación: «no me diste tiempo a contestar, vuelve a preguntarme de a una».'}</p></div>`
+   :`<p class="nota">Todavía no has registrado cómo se portó la IA al probar este prompt.</p>`}`;
+}
+
+function blkCiclo(){
+ const d=S.ciclo; if(!d)return '';
+ return `<div class="tarjeta"><h3 class="mt0">El orden del ciclo</h3>
+   <p style="margin:0">Acertaste <b>${d.aciertosOrden} de 7</b> posiciones.</p></div>
+  <h3>El eslabón roto era ${PASOS[CASO_CICLO.clave].n}</h3>
+  <div class="retro ${d.acierto?'bien':'neutro'}"><div class="cab">${d.acierto?'✓ Pusiste el peso donde estaba':`Tú pusiste el peso en ${PASOS[d.miMax].n}`}</div>
+   <p>${CASO_CICLO.lecturas[d.miMax]}</p><p>${CASO_CICLO.por}</p></div>
+  <div class="tarjeta ancha"><h3 class="mt0">Tu reparto contra el ideal del caso</h3>
+   ${barrasComparadas(PASOS.map(p=>p.n),d.pesos,CASO_CICLO.ideal)}
+   <p class="nota" style="margin-top:10px">La marca vertical señala dónde habría estado la atención ideal.</p></div>`;
+}
+
+function blkHabitos(){
+ if(!Object.keys(S.habitos).length)return '';
+ return HABITOS.map(h=>{const r=S.habitos[h.id];
+  if(r===undefined)return `<div class="tarjeta"><h3 class="mt0">${h.nom}</h3><p class="nota" style="margin:0">Sin hacer todavía.</p></div>`;
+  const bien=h.tipo==='escritura'?true:r===h.ok;
+  return `<div class="tarjeta"><h3 class="mt0">${h.nom} <span style="color:${bien?'var(--ok)':'var(--alerta)'};font-weight:700">${h.tipo==='escritura'?'✓':(bien?'✓':'✕')}</span></h3>
+   <p class="nota" style="margin:0 0 10px">${h.lema}</p>
+   <p style="margin:0 0 10px"><b>En qué consiste.</b> ${h.que}</p>
+   <p style="margin:0 0 10px"><b>Por qué importa.</b> ${h.porque}</p>
+   ${h.tipo==='escritura'?`<div class="tarjeta plana" style="margin:0 0 12px"><p class="nota" style="margin:0 0 6px">Lo único que viste del artículo antes de escribir:</p>
+     <p style="margin:2px 0;font-weight:640">${h.titulo}</p>
+     ${h.sub.map(x=>`<p class="nota" style="margin:2px 0">— ${x}</p>`).join('')}</div>
+     <p class="nota" style="margin:0 0 6px">Tus tres dudas propias, antes de leerlo:</p>
+     ${r.map((x,i)=>`<p style="margin:4px 0"><b>${i+1}.</b> ${esc(x)||'—'}</p>`).join('')}`:''}
+   <div class="retro ${bien?'bien':'mal'}" style="max-width:none;margin-bottom:0"><p>${h.retro}</p><div class="costo">${h.costo}</div></div></div>`}).join('');
+}
+
+function blkAutoria(){
+ const d=S.autoria; if(!d)return '';
+ const a=d.aciertos;
+ return `<div class="tarjeta"><h3 class="mt0" style="font-size:20px">${a} de 7 casos</h3>
+   <p style="margin:0">${a>=6?'Distingues declarar de aparentar que declaras, incluso en los casos donde lo correcto era no declarar.':a>=4?'Tienes el principio. Lo que falla son los casos donde la transparencia consiste en no inflar la declaración, o en no llevarla al lugar equivocado.':'Los siete casos apuntaban a lo mismo: una declaración sirve cuando permite a quien lee juzgar algo. Si no, es decoración o es trámite.'}</p></div>
+  <details open><summary>Decálogo de transparencia</summary>
+   <div class="tarjeta plana">${DECALOGO.map((x,i)=>`<p style="margin:9px 0"><b>${i+1}. ${x.n}.</b> ${x.d}</p>`).join('')}
+    <button class="btn sec chico" onclick="copiarDecalogo(this)" style="margin-top:8px">Copiar decálogo</button></div></details>`;
+}
+
+function blkPatrones(){
+ const d=S.patrones; if(!d)return '';
+ const a=d.aciertos;
+ return `<div class="tarjeta"><h3 class="mt0" style="font-size:20px">${a} de 5 veredictos</h3>
+   <p style="margin:0 0 10px">${a===5?'Los cinco, incluidos los dos humanos: el artículo corporativo lleno de marcas y la anécdota del frasco de mayonesa con su raya larga. Distingues el registro del autor.':a>=3?'Fíjate en cuáles fallaste. Los textos 3 y 5 son humanos: uno suena a máquina porque es prosa corporativa, y el otro tiene una raya larga que no prueba nada.':'Los textos 3 y 5 son humanos. Si los marcaste como IA, el ejercicio funcionó: acabas de ver que las marcas detectan un registro, no un autor.'}</p>
+   <p class="nota" style="margin:0">Marcaste ${d.marcas} rastro${d.marcas===1?'':'s'}. Lo que vale no es cuántos, sino haber visto que las mismas marcas aparecen en prosa humana: las IA aprendieron a escribir leyendo prosa corporativa.</p></div>
+  <div class="aviso"><span class="t">Lo que hay que llevarse</span>Marcar rastros no es lo mismo que probar autoría. Un texto es sospechoso cuando acumula varias etiquetas a la vez y, sobre todo, cuando no hay nadie adentro: ni un yo, ni una anécdota, ni un dato que se pueda verificar.</div>`;
+}
+
+function blkLectora(){
+ const ejes=['literal','inferencial','critica','contra'];
+ if(!ejes.some(e=>S.lectora[e].length))return '';
+ const noms=['Literal','Inferencial','Crítica','Contraarg.'];
+ const largos=['literal','inferencial','crítica','contraargumentativa'];
+ const vals=ejes.map(e=>{const a=S.lectora[e];return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0});
+ const min=vals.indexOf(Math.min(...vals)),max=vals.indexOf(Math.max(...vals));
+ return `<p class="nota">Cuatro niveles sobre un mismo texto. Un radar disparejo es lo normal: casi nadie rinde igual en los cuatro.</p>
+  ${radarSVG(noms,vals,'#00937B')}
+  <div class="tarjeta">
+   <p><b>Tu nivel más firme es el ${largos[max]} (${vals[max]}).</b> ${['Retienes lo que el texto dice literalmente, que es la base de todo lo demás.','Sacas a la luz lo que el texto da por supuesto sin escribirlo.','Ves lo que el texto hace además de lo que afirma: sus intereses, sus omisiones.','Sabes dónde golpear un argumento para probar si aguanta.'][max]}</p>
+   <p style="margin:0"><b>El que más trabajo pide es el ${largos[min]} (${vals[min]}).</b> Abajo tienes prácticas para cada nivel.</p></div>
+  <h3>Prácticas por nivel</h3>
+  ${ejes.map((e,i)=>`<details ${i===min?'open':''}><summary>${largos[i][0].toUpperCase()+largos[i].slice(1)} · ${vals[i]}</summary>
+   <div class="tarjeta plana">${PRACTICAS_LECTORA[e].map(p=>`<p class="nota" style="margin:5px 0">· ${p}</p>`).join('')}</div></details>`).join('')}`;
+}
+
 /* ===================================================================
    LECTURAS
    =================================================================== */
@@ -1415,59 +1551,41 @@ function resumenPentagono(){
    DIAGNÓSTICO
    =================================================================== */
 VISTAS.diag=()=>{
- const hay=Object.keys(S.actitud).length||S.sensibilidad||S.ciclo||S.patrones||S.autoria||
-  ['literal','inferencial','critica','contra'].some(e=>S.lectora[e].length);
+ const hay=Object.keys(S.actitud).length||S.sensibilidad||S.ciclo||S.patrones||S.autoria||S.socratico||
+  Object.keys(S.habitos).length||['literal','inferencial','critica','contra'].some(e=>S.lectora[e].length);
  if(!hay)return `<h1>Mi diagnóstico</h1>
   <div class="vacio" style="margin-top:18px">Todavía no hay nada que mostrar.<br>Haz cualquier ejercicio y este panel se empieza a llenar.</div>
   <button class="btn ancho" onclick="ir('inicio')" style="margin-top:16px">Ir a los ejercicios</button>`;
 
- const res=resumenPentagono();
- const vals=EJES.map(e=>ejeVal(e.id));
- const conDatos=vals.filter(v=>v!==null).length;
- const ejL=['literal','inferencial','critica','contra'];
- const valsL=ejL.map(e=>{const a=S.lectora[e];return a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length*100):0});
- const hayL=ejL.some(e=>S.lectora[e].length);
+ const secs=[
+  {id:'sensibilidad',n:'Temperatura lectora',c:'var(--sensibilidad)',html:blkSensible(),
+   falta:'Sin datos todavía. Este componente describe qué te pasa con un texto.'},
+  {id:'actitud',n:'Actitud frente a la IA',c:'var(--actitud)',html:blkActitud(),
+   falta:'Sin datos todavía. Empieza por «Tu actitud frente a la IA»: es el que ordena los cinco ejes.'},
+  {id:'socratico',n:'Diálogo socrático',c:'var(--actitud)',html:blkSocratico(),
+   falta:'Sin datos todavía. Aquí aparecerá el prompt que escribiste y qué piezas tenía.'},
+  {id:'ciclo',n:'Ciclo de consulta',c:'var(--proceso)',html:blkCiclo(),
+   falta:'Sin datos todavía. Aquí aparecerá tu orden del ciclo y tu reparto de atención.'},
+  {id:'habitos',n:'Rueda de hábitos',c:'var(--actitud)',html:blkHabitos(),
+   falta:'Sin datos todavía. Aquí aparecerán los cuatro hábitos con lo que cuesta no aplicarlos.'},
+  {id:'autoria',n:'Autoría en práctica',c:'var(--actitud)',html:blkAutoria(),
+   falta:'Sin datos todavía. Aquí aparecerá tu resultado y el decálogo de transparencia.'},
+  {id:'patrones',n:'Patrones de texto con IA',c:'var(--patrones)',html:blkPatrones(),
+   falta:'Sin datos todavía. Este componente entrena el ojo y se reporta aparte.'},
+  {id:'lectora',n:'Habilidad lectora',c:'var(--lectora)',html:blkLectora(),
+   falta:'Sin datos todavía. Aquí aparecerá tu radar de cuatro niveles con prácticas para cada uno.'}];
 
+ const listos=secs.filter(x=>x.html);
  return `<h1>Mi diagnóstico</h1>
- <p class="entrada">${hechos()} de 8 componentes completados. Todo se actualiza solo, en el orden que hayas ido eligiendo.</p>
+ <p class="entrada">${hechos()} de 8 componentes completados. Esto reúne todo lo que generó cada uno, completo y actualizado.</p>
+ ${listos.length>1?`<div class="tarjeta plana"><h3 class="mt0">Ir directo a</h3>
+  <div class="fila">${listos.map(x=>`<button class="btn sec chico" onclick="document.getElementById('s-${x.id}').scrollIntoView({behavior:'smooth',block:'start'})">${x.n}</button>`).join('')}</div></div>`:''}
 
- <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--actitud)"></span><h3>Actitud frente a la IA</h3></div>
- ${!conDatos?`<div class="vacio">Sin datos todavía. Empieza por «Tu actitud frente a la IA».</div>`:`
-  ${radarSVG(EJES.map(e=>e.corto),vals.map(v=>v??0),'#5A55E0')}
-  <div class="tarjeta"><h3 class="mt0" style="font-size:21px">${res.titulo}</h3>
-   <p class="nota" style="margin-bottom:12px">${res.texto}</p>
-   ${EJES.map(e=>{const v=ejeVal(e.id),h=S.actitud[e.id]||[];
-    if(v===null)return `<div class="trayecto"><b>${e.nom}</b> — sin datos todavía</div>`;
-    const decl=h.filter(x=>x.fuente==='Actitud inicial'),evi=h.filter(x=>x.fuente!=='Actitud inicial');
-    let tr;
-    if(evi.length){
-     const d0=decl.length?Math.round(decl.reduce((s,x)=>s+x.polo,0)/decl.length*100):null;
-     const d1=Math.round(evi.reduce((s,x)=>s+x.polo,0)/evi.length*100);
-     tr = d0===null?` Lo demostraste en ${evi.length} ejercicio${evi.length>1?'s':''}, no solo lo dijiste.`
-      : d1>d0+15?` Dijiste estar más cerca de ${e.a.toLowerCase()}, pero al hacerlo te moviste hacia ${e.b.toLowerCase()}.`
-      : d1<d0-15?` Te declaraste ${e.b.toLowerCase()}, pero en la práctica apareció el ${e.a.toLowerCase()}. Es el hueco más común entre lo que creemos y lo que hacemos.`
-      : ` Lo que declaraste y lo que hiciste coinciden.`;
-    } else tr=' Todavía es solo lo que declaraste: ningún ejercicio lo puso a prueba.';
-    return `<div class="trayecto"><b>${e.nom}: ${v>=50?e.b:e.a}</b> (${v})${tr}</div>`}).join('')}</div>`}
- </div>
-
- <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--lectora)"></span><h3>Habilidad lectora</h3></div>
- ${!hayL?`<div class="vacio">Sin datos todavía.</div>`:radarSVG(['Literal','Inferencial','Crítica','Contraarg.'],valsL,'#00937B')}</div>
-
- <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--sensibilidad)"></span><h3>Temperatura lectora</h3></div>
- ${!S.sensibilidad?`<div class="vacio">Sin datos todavía.</div>`:`${planoSVG(S.sensibilidad.pts)}
-  <div class="tarjeta">${prosaSensible(S.sensibilidad)}</div>`}</div>
-
- <div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--proceso)"></span><h3>Rigor del proceso</h3></div>
- ${!S.ciclo?`<div class="vacio">Sin datos todavía.</div>`:`<div class="tarjeta ancha">
-  <p class="nota mt0">Acertaste ${S.ciclo.aciertosOrden} de 7 posiciones del ciclo. ${S.ciclo.acierto?'En el caso del comité pusiste el peso en Confirmación, que era donde se rompía la cadena.':'En el caso del comité pusiste el peso en '+PASOS[S.ciclo.miMax].n+', y el eslabón roto era Confirmación.'}</p>
-  ${barrasComparadas(PASOS.map(p=>p.n),S.ciclo.pesos,CASO_CICLO.ideal)}</div>`}</div>
-
- ${S.autoria?`<div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--actitud)"></span><h3>Autoría</h3></div>
-  <div class="tarjeta"><p style="margin:0"><b>${S.autoria.aciertos} de 7 casos de transparencia.</b></p></div></div>`:''}
-
- ${S.patrones?`<div class="diag-sec"><div class="diag-cab"><span class="pt" style="background:var(--patrones)"></span><h3>Ojo para textos con IA</h3></div>
-  <div class="tarjeta"><p style="margin:0"><b>${S.patrones.aciertos} de 3 veredictos correctos</b>, con ${S.patrones.marcas} rastros marcados. <span class="nota">Este dato va aparte: entrena el ojo, no describe cómo lees.</span></p></div></div>`:''}
+ ${secs.map(x=>`<div class="diag-sec" id="s-${x.id}">
+   <div class="diag-cab"><span class="pt" style="background:${x.c}"></span><h3>${x.n}</h3>
+    ${x.html?`<button class="btn sec chico" style="margin-left:auto" onclick="ir('${x.id}')">Abrir</button>`:''}</div>
+   ${x.html||`<div class="vacio">${x.falta} <button class="btn sec chico" style="margin-top:10px;display:block;margin-inline:auto" onclick="ir('${x.id}')">Hacerlo ahora</button></div>`}
+  </div>`).join('')}
 
  <div class="acciones">
   <button class="btn sec" onclick="ir('inicio')">Volver al menú</button>
@@ -1550,7 +1668,8 @@ function descargar(){
   L.push('  Centro: '+Math.round(c.x)+' en sentir-entender, '+Math.round(c.y)+' en entrega-desconfianza');
   L.push('  Dispersión entre situaciones: '+dispersion(S.sensibilidad.pts));
   L.push('  Palabras del texto reconocidas: '+S.sensibilidad.aciertos+'/3');
-  L.push('  Ironía localizada: '+(S.sensibilidad.ironia?'sí':'no del todo'));
+  L.push('  Emociones elegidas: '+S.sensibilidad.emo.join(', '));
+  L.push('  Tono percibido: '+S.sensibilidad.ton.join(', ')+(S.sensibilidad.ironia?' (nombró la ironía)':' (no nombró la ironía)'));
   L.push(prosaSensible(S.sensibilidad).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim());L.push('')}
  const ejL=['literal','inferencial','critica','contra'],nm=['Literal','Inferencial','Crítica','Contraargumentativa'];
  if(ejL.some(e=>S.lectora[e].length)){L.push('— HABILIDAD LECTORA —');
