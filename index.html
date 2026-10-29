@@ -394,7 +394,7 @@ const ACTITUD_Q=[
  {eje:5,t:'Quieres que alguien piense en contra de tu propia idea.',a:'Le pido opinión a la de siempre y listo',b:'Busco una herramienta buena para tensionar argumentos'}];
 
 /* ===================================================================
-   3 · DIÁLOGO SOCRÁTICO
+   5 · DIÁLOGO SOCRÁTICO
    =================================================================== */
 const ANATOMIA=[
  {n:'Rol',d:'A quién le hablas. Un fiscal pregunta distinto que un divulgador. El rol decide desde dónde se mira el texto, y un rol simpático con la tesis no va a encontrarle grietas.'},
@@ -460,7 +460,7 @@ const ESCALA_IA=['Me dio todo de una, sin preguntar nada','Preguntó algo, pero 
  'Preguntó varias veces pero se cansó rápido y resolvió por mí','Sostuvo el diálogo, pregunta por pregunta, todo el tiempo que la dejé'];
 
 /* ===================================================================
-   4 · CICLO DE CONSULTA
+   3 · CICLO DE CONSULTA
    =================================================================== */
 const PASOS=[
  {n:'Necesidad',d:'Definir qué necesitas de verdad, antes de abrir ninguna herramienta. No es lo mismo necesitar un resumen que necesitar poder discutir el documento en una reunión.'},
@@ -497,7 +497,7 @@ const CASO_CICLO={
   6:'Diste mucho peso a Personalización. El informe de Marcela sonaba propio, ese no era el problema. La pregunta del director no era de estilo: era de verificación.'}};
 
 /* ===================================================================
-   5 · RUEDA DE HÁBITOS
+   4 · RUEDA DE HÁBITOS
    =================================================================== */
 const HABITOS=[
  {id:'cita',nom:'Cita obligatoria',lema:'Ninguna afirmación sin decir de dónde salió',eje:2,
@@ -667,9 +667,9 @@ const PRACTICAS_LECTORA={
 const MODULOS=[
  {id:'sensibilidad',n:'Temperatura lectora',s:'Qué te pasa a ti con un texto',c:'var(--sensibilidad)',ic:'T'},
  {id:'actitud',n:'Tu actitud frente a la IA',s:'Diez elecciones sin punto medio',c:'var(--actitud)',ic:'A'},
- {id:'socratico',n:'Diálogo socrático',s:'Pedir preguntas, no respuestas',c:'var(--actitud)',ic:'S'},
  {id:'ciclo',n:'Ciclo de consulta',s:'Siete pasos y dónde se rompen',c:'var(--proceso)',ic:'C'},
  {id:'habitos',n:'Rueda de hábitos',s:'Cuatro reglas que sostienen la lectura',c:'var(--actitud)',ic:'H'},
+ {id:'socratico',n:'Diálogo socrático',s:'Pedir preguntas, no respuestas',c:'var(--actitud)',ic:'S'},
  {id:'autoria',n:'Autoría en práctica',s:'Reconocer la transparencia real',c:'var(--actitud)',ic:'D'},
  {id:'patrones',n:'Patrones de texto con IA',s:'Marcar rastros, entrenar el ojo',c:'var(--patrones)',ic:'P'},
  {id:'lectora',n:'Habilidad lectora',s:'Cuatro niveles sobre un texto',c:'var(--lectora)',ic:'L'}];
@@ -921,7 +921,7 @@ VISTAS.actitud=()=>{
 };
 
 /* ===================================================================
-   3 · DIÁLOGO SOCRÁTICO
+   5 · DIÁLOGO SOCRÁTICO
    =================================================================== */
 const M3={
  pares:[],tipo:null,campos:{rol:'',freno:'',preg:'',espera:'',anclaje:''},nota:null,chk:null,
@@ -1018,7 +1018,7 @@ VISTAS.socratico=()=>{
 };
 
 /* ===================================================================
-   4 · CICLO DE CONSULTA
+   3 · CICLO DE CONSULTA
    =================================================================== */
 const M4={
  asig:{},verif:false,pesos:null,mezcla:null,
@@ -1115,7 +1115,7 @@ VISTAS.ciclo=()=>{
 };
 
 /* ===================================================================
-   5 · RUEDA DE HÁBITOS
+   4 · RUEDA DE HÁBITOS
    =================================================================== */
 const M6={activo:null,dudas:['','',''],
  reset(){this.activo=null;this.dudas=['','','']},
@@ -1572,12 +1572,12 @@ VISTAS.diag=()=>{
    falta:'Sin datos todavía. Este componente describe qué te pasa con un texto.'},
   {id:'actitud',n:'Actitud frente a la IA',c:'var(--actitud)',html:blkActitud(),
    falta:'Sin datos todavía. Empieza por «Tu actitud frente a la IA»: es el que ordena los cinco ejes.'},
-  {id:'socratico',n:'Diálogo socrático',c:'var(--actitud)',html:blkSocratico(),
-   falta:'Sin datos todavía. Aquí aparecerá el prompt que escribiste y qué piezas tenía.'},
   {id:'ciclo',n:'Ciclo de consulta',c:'var(--proceso)',html:blkCiclo(),
    falta:'Sin datos todavía. Aquí aparecerá tu orden del ciclo y tu reparto de atención.'},
   {id:'habitos',n:'Rueda de hábitos',c:'var(--actitud)',html:blkHabitos(),
    falta:'Sin datos todavía. Aquí aparecerán los cuatro hábitos con lo que cuesta no aplicarlos.'},
+  {id:'socratico',n:'Diálogo socrático',c:'var(--actitud)',html:blkSocratico(),
+   falta:'Sin datos todavía. Aquí aparecerá el prompt que escribiste y qué piezas tenía.'},
   {id:'autoria',n:'Autoría en práctica',c:'var(--actitud)',html:blkAutoria(),
    falta:'Sin datos todavía. Aquí aparecerá tu resultado y el decálogo de transparencia.'},
   {id:'patrones',n:'Patrones de texto con IA',c:'var(--patrones)',html:blkPatrones(),
