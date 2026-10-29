@@ -196,6 +196,13 @@ input[type=range]::-moz-range-thumb{width:27px;height:27px;border-radius:50%;bor
   display:grid;place-items:center;font-size:11.5px;font-weight:700}
 .guia-it.act .n{background:var(--sensibilidad);color:#fff}
 .guia-it.ok .n{background:var(--ok);color:#fff}
+.tl-it{align-items:flex-start}
+.tl-it .n{margin-top:1px;background:var(--proceso);color:#fff}
+.tl-paso{display:block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--proceso);margin-bottom:2px}
+.tl-txt{display:block;line-height:1.4}
+.tl-marco{background:transparent;border-style:dashed}
+.tl-marco .n{background:var(--linea);color:var(--tinta-media)}
+.tl-marco .tl-paso{color:var(--tinta-suave)}
 
 textarea,input[type=text]{width:100%;font-family:var(--ui);font-size:16px;line-height:1.5;padding:12px 13px;
   border-radius:13px;border:1.5px solid var(--linea);background:var(--superficie);color:var(--tinta);max-width:var(--medida)}
@@ -468,14 +475,15 @@ const CASO_CICLO={
  tit:'El comité de inversión',
  txt:'Marcela dirige investigación de mercados en una empresa de consumo masivo. El comité de inversión tiene que decidir el jueves si destina tres años de presupuesto a una plataforma de datos de clientes. A Marcela le toca fundamentar la recomendación.',
  timeline:[
-  'El lunes recibe un informe sectorial de 62 páginas sobre economía de datos en América Latina. Tiene hasta el jueves.',
-  'Decide que lo que necesita son «las cifras clave» para armar tres diapositivas convincentes.',
-  'Abre la misma IA generalista que usa para todo. No le sube el informe: le pega el índice y los fragmentos que alcanza a copiar.',
-  'Escribe: «extráeme las cifras más importantes de este informe».',
-  'Recibe ocho cifras en una lista limpia y bien redactada. Le parecen razonables y coherentes entre sí.',
-  'Elige tres para la presentación, entre ellas los 260.000 millones de dólares. Las reescribe con su estilo y arma una narrativa propia sobre la oportunidad regional.',
-  'No vuelve a abrir el informe original en ningún momento de los tres días.',
-  'El jueves presenta. Un director pregunta si esos 260.000 millones son del mercado global o del latinoamericano, y de qué año es el dato.'],
+  {p:null,et:'Punto de partida',t:'El lunes recibe un informe sectorial de 62 páginas sobre economía de datos en América Latina. Tiene hasta el jueves.'},
+  {p:0,t:'Decide que lo que necesita son «las cifras clave» para armar tres diapositivas convincentes.'},
+  {p:1,t:'Abre la misma IA generalista que usa para todo. No le sube el informe: le pega el índice y los fragmentos que alcanza a copiar.'},
+  {p:2,t:'Escribe: «extráeme las cifras más importantes de este informe».'},
+  {p:3,t:'Recibe ocho cifras en una lista limpia y bien redactada. Le parecen razonables y coherentes entre sí.'},
+  {p:4,t:'Con esa primera respuesta le basta: no ajusta la instrucción ni vuelve a consultar.'},
+  {p:5,t:'No vuelve a abrir el informe original en ningún momento de los tres días.'},
+  {p:6,t:'Elige tres cifras para la presentación, entre ellas los 260.000 millones de dólares. Las reescribe con su estilo y arma una narrativa propia sobre la oportunidad regional.'},
+  {p:null,et:'Desenlace',t:'El jueves presenta. Un director pregunta si esos 260.000 millones son del mercado global o del latinoamericano, y de qué año es el dato.'}],
  clave:5,
  ideal:[3,1,2,2,1,5,1],
  por:'La instrucción de Marcela estuvo bien y el resumen era correcto. Lo que faltó fue volver a la fuente antes de llevar la cifra a un comité que decide una inversión de tres años. Confirmación es el paso más barato de hacer y el más caro de saltarse: cuesta dos minutos y sostiene tu credibilidad delante de un directorio.',
@@ -1034,7 +1042,7 @@ const M4={
   const mx=Math.max(...this.pesos);
   S.ciclo={orden:Object.keys(this.asig).map(k=>({p:+k,pos:this.asig[k]})),
    aciertosOrden:Object.keys(this.asig).filter(k=>this.asig[k]===+k+1).length,
-   pesos:this.pesos.slice(),miMax:this.pesos.indexOf(mx),acierto:this.pesos[CASO_CICLO.clave]===mx};
+   pesos:this.pesos.slice(),miMax:this.pesos[CASO_CICLO.clave]===mx?CASO_CICLO.clave:this.pesos.indexOf(mx),acierto:this.pesos[CASO_CICLO.clave]===mx};
   EST.ciclo='hecho';paso(3);
  }};
 
@@ -1083,9 +1091,11 @@ VISTAS.ciclo=()=>{
    <h2 class="mt0">${CASO_CICLO.tit}</h2>
    <div class="tarjeta plana"><p style="margin:0;font-size:16.5px;line-height:1.55">${CASO_CICLO.txt}</p></div>
    <h3>Lo que hizo, día por día</h3>
-   <p class="nota">Cada una de estas ocho decisiones cae en algún paso del ciclo. Léelas pensando en cuál fue la que costó cara.</p>
-   <div class="plano-guia">${CASO_CICLO.timeline.map((l,i)=>`<div class="guia-it" style="align-items:flex-start">
-     <span class="n" style="margin-top:1px">${i+1}</span><span style="flex:1;line-height:1.4">${l}</span></div>`).join('')}</div>
+   <p class="nota">Cada decisión está marcada con el paso del ciclo al que corresponde. Léelas pensando en cuál fue la que costó cara.</p>
+   <div class="plano-guia">${CASO_CICLO.timeline.map(l=>{const esPaso=l.p!==null;
+     return `<div class="guia-it tl-it ${esPaso?'':'tl-marco'}">
+     <span class="n">${esPaso?l.p+1:'·'}</span><span style="flex:1"><span class="tl-paso">${esPaso?PASOS[l.p].n:l.et}</span>
+     <span class="tl-txt">${l.t}</span></span></div>`}).join('')}</div>
    <h3>Reparte 15 puntos de atención</h3>
    <p class="nota">Si pudieras volver atrás y acompañar a Marcela, ¿dónde pondrías la atención? Más puntos donde creas que estuvo el problema.</p>
    <div class="tarjeta">${PASOS.map((p,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--linea)">
